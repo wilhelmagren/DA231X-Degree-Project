@@ -1,5 +1,7 @@
 # DA231X-Degree-Project
-Master of Science and Engineering degree project at KTH Royal Institute of Technology, advanced level 30 credits. 
+Degree Project in Computer Science and Engineering at KTH Royal Institute of Technology, advanced level 30 credits. Yields a M.Sc.Eng degree as part of the Communication and Technology program. The contents and learning outcomes of the course are as follows:
+
+*before*
 
 ## Thesis
 This is the this that I have written with much rigour and passion.
