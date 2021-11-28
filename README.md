@@ -22,9 +22,13 @@ Links to course rooms are found below:
 - [DA231X Degree Project in Computer Science and Engineering, Second Cycle 30.0 credits](https://www.kth.se/student/kurser/kurs/DA231X?l=en)
 - [Degree Projects at EECS, 2022](https://canvas.kth.se/courses/33514)
 
-## Thesis
-This is the thesis that I have written with much rigour and passion.
+## Project description and thesis
+In collaboration with the SLEMEG project conducted with Karolinska Universitetet (KI) and Stockholm University (SU). MEG data collected from 33 subjects to measure and investigate potential effects of sleep deprivation on brain activity. This is the thesis that I have written with much rigour and passion.
 
+
+## Neurocode
+![Neurocode logo](/images/neurocode.png)
+This is a small library I wrote to streamline working with the provided MEG dataset. It features loading data, preprocessing and removing artifacts, pretext tasks, downstream tasks, and training and evaluation of models! The idea was to utilize the library [braindecode](https://braindecode.org/) for this project, but the samplers for the pretext task does not work with our dataset because of missing events. So I had to take an alternative approach and do it myself. Hence, much of the code is inspired by that of braindecode but tailored for the provided SLEMEG project. It is mostly built upon the libraries: [numpy](https://numpy.org/), [mne-python](https://mne.tools/stable/index.html) and [pytorch](https://pytorch.org/).
 
 ### Contact and license
 Author: Wilhelm Ågren, wagren@kth.se
