@@ -1,4 +1,4 @@
 from .base import BaseSampler
 from .relative_positioning import RelativePositioningSampler
 from .temporal_shuffling import TemporalShufflingSampler
-from .recording_relative_positioning import RecordingRelativePositioning
+from .recording_relative_positioning import RecordingRelativePositioningSampler
