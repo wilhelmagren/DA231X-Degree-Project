@@ -14,7 +14,7 @@ from torch.utils.data.sampler import Sampler
 class BaseSampler(Sampler):
     def __init__(self, metadata, info, **kwargs):
         self.metadata = metadata
-        self.info, self.rng = self._setup(info, **kwargs)
+        self._setup(info, **kwargs)
 
     def __len__(self):
         return self.info['n_samples']
@@ -38,10 +38,11 @@ class BaseSampler(Sampler):
                     presample=presample)
         rng = np.random.RandomState(seed=seed)
         
+        self.info = info
+        self.rng = rng
+
         if presample:
             self._presample()
-
-        return info, rng
 
     def _sample_recording(self):
         return self.rng.randint(0, high=len(self.metadata['data']))
