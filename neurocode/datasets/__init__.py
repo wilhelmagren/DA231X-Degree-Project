@@ -1,1 +1,1 @@
-from .meg_psd2021 import MEGDataset
+from .slemeg import SLEMEG
