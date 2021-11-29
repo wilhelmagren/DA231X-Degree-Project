@@ -16,9 +16,9 @@ from .base import BaseSampler
 
 class RelativePositioningSampler(BaseSampler):
     def __init__(self, metadata, info, tau_neg=10, tau_pos=4, **kwargs):
-        super().__init__(metadata, info, **kwargs)
         self.tau_neg = tau_neg
         self.tau_pos = tau_pos
+        super().__init__(metadata, info, **kwargs)
 
     def _sample_pair(self, recording_idx=None):
         if not recording_idx:
@@ -29,8 +29,8 @@ class RelativePositioningSampler(BaseSampler):
         batch_labels = list()
         for _ in range(self.info['batch_size']):
             anchor_idx = self.rng.randint(0, len(self.metadata['data'][recording_idx]))
-            sample_idx = None
             label = self.rng.binomial(1, .5)
+            sample_idx = None
 
             if label == 0:
                 # Sample from the negative context
