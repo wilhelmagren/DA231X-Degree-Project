@@ -7,6 +7,7 @@ Last edited: 29-11-2021
 import mne
 import os
 import torch
+import pandas as pd
 
 from enum import Enum
 
@@ -25,16 +26,15 @@ def BCEWithLogitsAccuracy(outputs, labels):
     outputs = outputs > 0.
     return (outputs == labels).sum().item()
 
-def load_raw_fif(fpath, info, drop_channels=False):
+def load_raw_fif(fpath, subj_id, reco_id, preload, drop_channels=False):
     raw = mne.io.read_raw_fif(fpath, preload=True)   # we need to preload, otherwise can't access data
     
-    if raw.info['sfreq'] != info['sfreq']:
-        raise ValueError('specified sampling frequency does not equal that of the data!')
-
     if drop_channels:
-        exclude = list(ch for ch in list(map(lambda ch: None if ch in info['channels'] else ch, raw.info['ch_names'])) if ch)
+        exclude = list(ch for ch in list(map(lambda ch: None if ch in DEFAULT_MEG_CHANNELS else ch, raw.info['ch_names'])) if ch)
         raw.drop_channels(exclude)
-    return raw
+    
+    desc = pd.Series({'subject': subj_id, 'recording': reco_id}, name='')
+    return raw, desc
 
 def create_epochs(raw, info, s_start_trials=5., s_end_trials=5.):
     sfreq = info['sfreq']
