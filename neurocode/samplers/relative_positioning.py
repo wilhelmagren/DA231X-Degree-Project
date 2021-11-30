@@ -6,52 +6,53 @@ size indirectly affects learning as well, since it drives loss
 down with varying amounts of steps.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 29-11-2021
+Last edited: 30-11-2021
 """
 import torch
 import numpy as np
 
-from .base import BaseSampler
+from .base import PretextSampler
 
 
-class RelativePositioningSampler(BaseSampler):
-    def __init__(self, metadata, info, tau_neg=10, tau_pos=4, **kwargs):
+class RelativePositioningSampler(PretextSampler):
+    def __init__(self, data, info, **kwargs):
+        super().__init__(data, info, **kwargs)
+
+    def _parameters(self, tau_neg=30, tau_pos=2, **kwargs):
         self.tau_neg = tau_neg
         self.tau_pos = tau_pos
-        super().__init__(metadata, info, **kwargs)
 
-    def _sample_pair(self, recording_idx=None):
-        if not recording_idx:
+    def _sample_window(self, recording_idx=None):
+        if recording_idx is None:
             recording_idx = self._sample_recording()
+        return self.rng.choice(self.info['lengths'][recording_idx])
 
+    def _sample_pair(self):
         batch_anchors = list()
         batch_samples = list()
         batch_labels = list()
-        for _ in range(self.info['batch_size']):
-            anchor_idx = self.rng.randint(0, len(self.metadata['data'][recording_idx]))
-            label = self.rng.binomial(1, .5)
-            sample_idx = None
+        reco_idx = self._sample_recording()
+        for _ in range(self.batch_size):
+            win_idx1 = self._sample_window(recording_idx=reco_idx)
+            pair_type = self.rng.binomial(1, .5)
+            win_idx2 = -1
 
-            if label == 0:
-                # Sample from the negative context
-                low = max(0, anchor_idx - self.tau_pos - self.tau_neg)
-                high = min(anchor_idx + self.tau_pos + self.tau_neg + 1, len(self.metadata['data'][recording_idx]))
-                sample_idx = self.rng.randint(low, high)
-                while anchor_idx - self.tau_pos <= sample_idx <= anchor_idx + self.tau_pos:
-                    sample_idx = self.rng.randint(low, high)
-            elif label == 1:
-                # Sample from the positive context
-                sample_idx = self.rng.randint(max(0, anchor_idx - self.tau_pos), min(anchor_idx + self.tau_pos, len(self.metadata['data'][recording_idx])))
-                while sample_idx == anchor_idx:
-                    sample_idx = self.rng.randint(max(0, anchor_idx - self.tau_pos), min(anchor_idx + self.tau_pos, len(self.metadata['data'][recording_idx])))
+            if pair_type == 0:
+                win_idx2 = self._sample_window(recording_idx=reco_idx)
+                while np.abs(win_idx1 - win_idx2) < self.tau_neg or win_idx1 == win_idx2:
+                    win_idx2 = self._sample_window(recording_idx=reco_idx)
+            elif pair_type == 1:
+                win_idx2 = self._sample_window(recording_idx=reco_idx)
+                while np.abs(win_idx1 - win_idx2) > self.tau_pos or win_idx1 == win_idx2:
+                    win_idx2 = self._sample_window(recording_idx=reco_idx)
 
-            batch_anchors.append(self.metadata['data'][recording_idx][anchor_idx][None])
-            batch_samples.append(self.metadata['data'][recording_idx][sample_idx][None])
-            batch_labels.append(float(label))
+            batch_anchors.append(self.data[reco_idx][win_idx1][0][:2][None])
+            batch_samples.append(self.data[reco_idx][win_idx2][0][:2][None])
+            batch_labels.append(float(pair_type))
         
         ANCHORS = torch.Tensor(np.concatenate(batch_anchors, axis=0))
         SAMPLES = torch.Tensor(np.concatenate(batch_samples, axis=0))
         LABELS = torch.Tensor(np.array(batch_labels))
-
+        
         return (ANCHORS, SAMPLES, LABELS)
 
