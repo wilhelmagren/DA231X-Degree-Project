@@ -16,8 +16,8 @@ from torch import nn
 
 class StagerNet(nn.Module):
     def __init__(self, n_channels, sfreq, n_conv_chs=16, emb_size=100,
-                input_size_s=5., time_conv_size_s=.25, max_pool_size_s=.05,
-                pad_size_s=.125, dropout=.5, apply_batch_norm=False,
+                input_size_s=30., time_conv_size_s=.5, max_pool_size_s=.125,
+                pad_size_s=.25, dropout=.5, apply_batch_norm=False,
                 return_feats=False, **kwargs):
         super(StagerNet, self).__init__()
         time_conv_size = np.ceil(time_conv_size_s * sfreq).astype(int)
@@ -65,9 +65,9 @@ class StagerNet(nn.Module):
         if self.n_channels > 1:
             x = self.spatial_conv(x)
             x = x.transpose(1, 2)
-
+        
         feats = self.feature_extractor(x).flatten(start_dim=1)
-
+        
         if self.return_feats:
             return feats
         else:
