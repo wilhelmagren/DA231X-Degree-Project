@@ -15,17 +15,12 @@ from .base import PretextSampler
 
 
 class RelativePositioningSampler(PretextSampler):
-    def __init__(self, data, info, **kwargs):
-        super().__init__(data, info, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def _parameters(self, tau_neg=30, tau_pos=2, **kwargs):
         self.tau_neg = tau_neg
         self.tau_pos = tau_pos
-
-    def _sample_window(self, recording_idx=None):
-        if recording_idx is None:
-            recording_idx = self._sample_recording()
-        return self.rng.choice(self.info['lengths'][recording_idx])
 
     def _sample_pair(self):
         batch_anchors = list()
