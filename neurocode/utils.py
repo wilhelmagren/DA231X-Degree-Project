@@ -6,6 +6,7 @@ Last edited: 29-11-2021
 """
 import mne
 import os
+import torch
 
 from enum import Enum
 
@@ -18,6 +19,11 @@ RECORDING_ID_MAP = {
         1: 'ses-con_task-rest_eo',
         2: 'ses-psd_task-rest_ec',
         3: 'ses-psd_task-rest_eo'}
+
+def BCEWithLogitsAccuracy(outputs, labels):
+    outputs, labels = torch.flatten(outputs), torch.flatten(labels)
+    outputs = outputs > 0.
+    return (outputs == labels).sum().item()
 
 def load_raw_fif(fpath, info, drop_channels=False):
     raw = mne.io.read_raw_fif(fpath, preload=True)   # we need to preload, otherwise can't access data
