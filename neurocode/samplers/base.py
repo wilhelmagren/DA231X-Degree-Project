@@ -46,9 +46,10 @@ class PretextSampler(Sampler):
     def _sample_recording(self):
         return self.rng.randint(0, high=self.info['n_recordings'])
     
-    def _sample_window(self, *args, **kwargs):
-        raise NotImplementedError(
-                'Please implement window sampling!')
+    def _sample_window(self, recording_idx=None, **kwargs):
+        if recording_idx is None:
+            recording_idx = self._sample_recording()
+        return self.rng.choice(self.info['lengths'][recording_idx])
    
     def _sample_pair(self, *args, **kwargs):
         raise NotImplementedError(
