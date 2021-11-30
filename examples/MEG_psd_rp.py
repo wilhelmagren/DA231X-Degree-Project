@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from neurocode.utils import BCEWithLogitsAccuracy
 from neurocode.datasets import RecordingDataset, SLEMEG
-from neurocode.samplers import RelativePositioningSampler
+from neurocode.samplers import RecordingRelativePositioningSampler
 from neurocode.models import ContrastiveNet, StagerNet
 from braindecode.datautil.preprocess import preprocess, Preprocessor
 from braindecode.datautil.windowers import create_fixed_length_windows
@@ -19,7 +19,7 @@ sfreq = 200
 window_size_samples = window_size_s * sfreq
 subjects = list(range(2,4))
 recordings = [1,3]
-tau_pos = 2
+tau_pos = 10
 tau_neg = 30
 n_samples = 256
 batch_size = 32
@@ -45,8 +45,8 @@ windows_dataset = create_fixed_length_windows(dataset, start_offset_samples=0,
 recording_dataset = RecordingDataset(windows_dataset.datasets, sfreq=sfreq, channels='MEG')
 
 # set up relative-positioning sampler with MEG recording dataset
-sampler = RelativePositioningSampler(recording_dataset.get_data(),
-        recording_dataset.get_info(), tau_neg=tau_neg, tau_pos=tau_pos,
+sampler = RecordingRelativePositioningSampler(recording_dataset.get_data(),
+        recording_dataset.get_info(), tau=tau_pos, gamma=.6,
         n_samples=n_samples, batch_size=batch_size)
 
 # Setup pytorch training, move models etc.
