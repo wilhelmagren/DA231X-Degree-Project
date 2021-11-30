@@ -17,7 +17,7 @@ class ContrastiveNet(nn.Module):
         self.emb = emb
         self.clf = nn.Sequential(
                 nn.Dropout(dropout),
-                nn.Linear(emb_size, 2)
+                nn.Linear(emb_size, 1)
                 )
 
     def forward(self, x):
