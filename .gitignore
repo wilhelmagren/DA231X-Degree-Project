@@ -1,5 +1,5 @@
-admin/
 data/
+notes/
 
 # Vim swap and tmp files
 [._]*.s[a-v][a-z]
