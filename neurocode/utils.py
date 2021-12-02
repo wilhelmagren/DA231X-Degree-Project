@@ -21,6 +21,31 @@ RECORDING_ID_MAP = {
         2: 'ses-psd_task-rest_ec',
         3: 'ses-psd_task-rest_eo'}
 
+def train_valid_split(X, y, split=.6, shuffle=False, **kwargs):
+    if X.shape[0] != y.shape[0]:
+        raise ValueError(f'data and label arrays must have the same amount of items! X={X.shape}, y={y.shape}')
+
+    split_idx = int(X.shape[0] * split)
+    
+    if shuffle:
+        indices = np.arange(X.shape[0])
+        np.random.shuffle(indices)
+        X, y = X[indices], y[indices]
+
+    X_train, X_valid = X[:split_idx], X[split_idx:]
+    y_train, y_valid = y[:split_idx], y[split_idx:]
+    return X_train, y_train, X_valid, y_valid
+
+def recording_train_valid_split(recordings, split=.6, **kwargs):
+    split_idx = int(len(recordings) * split)
+    train_range = list(range(split_idx))
+    valid_range = list(range(split_idx, len(recordings)))
+
+    recordings_train = {k: recordings[k] for k in train_range}
+    recordings_valid = {(k-split_idx): recordings[k] for k in valid_range}
+    return recordings_train, recordings_valid
+
+
 def BCEWithLogitsAccuracy(outputs, labels):
     outputs, labels = torch.flatten(outputs), torch.flatten(labels)
     outputs = outputs > 0.
