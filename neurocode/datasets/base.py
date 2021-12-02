@@ -20,8 +20,11 @@ class RecordingDataset(Dataset):
         return self.datasets[recording][window]
 
     def _setup(self, datasets, **kwargs):
-        dataset = {recording: dataset for recording, dataset in enumerate(datasets)}
-        lengths = {recording: len(dataset) for recording, dataset in enumerate(datasets)}
+        dataset = datasets
+        if type(datasets) is list:
+            dataset = {r: d for r, d in enumerate(datasets)}
+
+        lengths = {r: len(d) for r, d in dataset.items()}
         info = dict(lengths=lengths, n_recordings=len(dataset))
         info = {**info, **kwargs}
         return dataset, info
