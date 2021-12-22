@@ -1,0 +1,21 @@
+Davis-Bouldin index:
+    Mäter hur tätt datan inom ett kluster ligger jämfört med hur tätt de respektive
+    klusterna ligger relativt varandra. 
+    SKLEARN: "The score is defined as the average similarity measure of each 
+        cluster with its most similar cluster, where similarity is the ratio
+        of within-cluster distances to between-cluster distances."
+
+Adjusted rand score:
+    Ett mått på klusteringens accuracy, justerad för slumpen.
+    SKLEARN: "The Rand Index computes a similarity measure between two
+    clusterings by considering all pairs of samples and counting pairs
+    that are assigned in the same or different clusters in the
+    predicted and true clusterings."
+
+K-Medoids:
+    Alternativ till K-Means eller fuzzy C-Means där man är garanterad att
+    klustervärdet representeras av en datapunkt.
+    WIKIPEDIA: "The medoid of a cluster is defined as
+    the object in the cluster whose average dissimilarity to all
+    the objects in the cluster is minimal, that is,
+    it is a most centrally located point in the cluster."
