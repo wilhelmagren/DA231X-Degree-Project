@@ -28,29 +28,22 @@ windows_dataset = create_fixed_length_windows(dataset, start_offset_samples=1,
         stop_offset_samples=None, drop_last_window=True, window_size_samples=window_size_samples,
         window_stride_samples=window_size_samples, preload=True)
 
-#preprocess(windows_dataset, [Preprocessor(zscore)])
-
 # Extract time-windows
 from scipy import signal
 
 dataset = RecordingDataset(windows_dataset.datasets, sfreq=sfreq, channels='MEG')
 print(dataset.get_info())
-fig, axs = plt.subplots(2, 5, sharex=True, sharey=True)
 
-for channel_idx in range(0, 2):
-    for window_idx in range(5, 10):
-        npdata = dataset[0, window_idx][0]
-        # f, t, Zxx = signal.stft(npdata[channel_idx, :], sfreq, noverlap=0)
-        f, t, Sxx = signal.spectrogram(npdata[channel_idx, :],
-                sfreq, noverlap=0, nperseg=sfreq)
-        print(Sxx)
-        print(f'{f=}, {t=}')
-        exit()
-        axs[channel_idx, window_idx-5].pcolormesh(t, f, Sxx,
-                vmin=0, shading='gouraud', cmap='hot')
-        axs[channel_idx, window_idx-5].set_title(f'{window_idx*window_size_s}s to {(window_idx+1)*window_size_s}s')
-fig.suptitle(f'Spectrogram of MEG channels, in {window_size_s} second windows.')
-fig.text(.04, .5, 'Frequency [Hz]', ha='center', rotation='vertical')
+fig, axs = plt.subplots(2, 3)
+for widx in range(5, 8):
+    npdata = dataset[0, widx][0]
+    cwtmatr = signal.cwt(npdata[0, :], signal.ricker, np.arange(1, 101))
+    axs[0, widx-5].plot(list(range(1 + 600*(widx-5), 1 + 600*(widx-4))), npdata[0, :], label='Signal')
+    axs[1, widx-5].imshow(cwtmatr, extent=[-1, 1, 1, 101], cmap='hot', aspect='auto',
+            vmax=abs(cwtmatr).max(), vmin=-abs(cwtmatr).max(), label='Wavelet transform')
+fig.suptitle(f'Signal and Continuous Wavelet Transform scalogram, in {window_size_s}s windows')
+fig.text(.04, .2, 'Frequency [Hz]                        Amplitude [mT]', ha='center', rotation='vertical')
 fig.text(.5, .04, 'Time [s]', ha='center')
+plt.legend()
 plt.show()
 
