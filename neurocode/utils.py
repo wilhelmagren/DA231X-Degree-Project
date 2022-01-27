@@ -2,7 +2,7 @@
 utility functions et al.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 29-11-2021
+Last edited: 27-01-2022
 """
 import mne
 import os
@@ -51,11 +51,14 @@ def BCEWithLogitsAccuracy(outputs, labels):
     outputs = outputs > 0.
     return (outputs == labels).sum().item()
 
-def load_raw_fif(fpath, subj_id, reco_id, preload, drop_channels=False):
+def load_raw_fif(fpath, subj_id, reco_id, preload, drop_channels=False, channels=None):
+    if not channels:
+        channels = DEFAULT_MEG_CHANNELS
+
     raw = mne.io.read_raw_fif(fpath, preload=True)   # we need to preload, otherwise can't access data
     
     if drop_channels:
-        exclude = list(ch for ch in list(map(lambda ch: None if ch in DEFAULT_MEG_CHANNELS else ch, raw.info['ch_names'])) if ch)
+        exclude = list(ch for ch in list(map(lambda ch: None if ch in channels else ch, raw.info['ch_names'])) if ch)
         raw.drop_channels(exclude)
     
     desc = pd.Series({'subject': subj_id, 'recording': reco_id}, name='')

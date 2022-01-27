@@ -87,12 +87,11 @@ class WaveletNet(nn.Module):
                  sfreq,
                  n_conv_chs=16,
                  emb_size=100,
-                 input_size_s=5.,
+                 input_size_s=3.,
                  dropout=.25,
                  return_features=False):
 
         super(WaveletNet, self).__init__()
-        self.n_frequency_bands = n_frequency_bands
         self.sfreq = sfreq
         self.return_features = return_features
         input_size = np.ceil(input_size_s * sfreq).astype(int)
@@ -127,8 +126,8 @@ class WaveletNet(nn.Module):
         self.feature_extractor.eval()
         with torch.no_grad():
             resulting_conv = self.feature_extractor(torch.Tensor(1, 1, n_frequency_bands, input_size))
-        self.feature_extractor.train()
-        return resulting_conv
+            self.feature_extractor.train()
+            return resulting_conv
 
     def forward(self, x):
         if x.ndim == 3:
