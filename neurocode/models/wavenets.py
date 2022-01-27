@@ -156,13 +156,17 @@ if __name__ == '__main__':
     #summary(model, (1, n_frequency_bands, int(inputsize_s*sfreq)))
     model2 = SignalNet(1, sfreq, n_conv_chs=n_conv_chs,
             input_size_s=inputsize_s).to(device)
+
+    optimizer = torch.optim.Adam(model2.parameters(), lr=5e-4, weight_decay=1e-6)
+    criterion = torch.nn.BCEWithLogitsLoss()
+
     tensor = torch.Tensor(1, 1, n_frequency_bands,  int(inputsize_s*sfreq)).to(device)
     tensor2 = torch.Tensor(1, 1, 1, int(inputsize_s*sfreq)).to(device)
-    print(f'input shape = {tensor.shape}')
     output = model(tensor)
     output2 = model2(tensor2)
-    print(output)
-    print(f'output shape = {output.shape}')
-    print(output2)
-    print(f'output2 shape = {output2.shape}')
+    label = torch.Tensor(1, 100).to(device)
+
+    loss = criterion(output2, label)
+    loss.backward()
+    optimizer.step()
 
