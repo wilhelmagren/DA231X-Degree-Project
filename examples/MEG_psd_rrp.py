@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from neurocode.utils import BCEWithLogitsAccuracy, recording_train_valid_split
 from neurocode.datasets import RecordingDataset, SLEMEG
 from neurocode.samplers import RecordingRelativePositioningSampler
-from neurocode.models import ContrastiveNet, StagerNet
+from neurocode.models import ContrastiveRP, StagerNet
 from braindecode.datautil.preprocess import preprocess, Preprocessor, zscore
 from braindecode.datautil.windowers import create_fixed_length_windows
 
@@ -62,7 +62,7 @@ samplers = dict(train=RecordingRelativePositioningSampler(datasets['train'].get_
 # Setup pytorch training, move models etc.
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 emb = StagerNet(n_channels, sfreq, dropout=.25, input_size_s=5.).to(device)
-model = ContrastiveNet(emb, emb_size, dropout=.25).to(device)
+model = ContrastiveRP(emb, emb_size, dropout=.25).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=5e-4, weight_decay=1e-6)
 criterion = torch.nn.BCEWithLogitsLoss()
 
@@ -108,7 +108,7 @@ for epoch in range(epochs):
 fig, ax1 = plt.subplots(figsize=(8,3))
 ax2 = ax1.twinx()
 ax1.plot(history['tloss'], ls='-', marker='d', ms=5, alpha=.7, color='tab:blue', label='training loss')
-ax1.plot(history['vloss'], ls=':'. marker='d'. ms=5, alpha=.7, color='tab:blue', label='validation loss')
+ax1.plot(history['vloss'], ls=':', marker='d', ms=5, alpha=.7, color='tab:blue', label='validation loss')
 ax2.plot(history['tacc'], ls='-', marker='d', ms=5, alpha=.7, color='tab:orange', label='training acc')
 ax2.plot(history['vacc'], ls=':', marker='d', ms=5, alpha=.7, color='tab:orange', label='validation acc')
 ax1.tick_params(axis='y', labelcolor='tab:blue')

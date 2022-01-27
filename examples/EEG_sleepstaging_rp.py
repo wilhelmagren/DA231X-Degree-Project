@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from neurocode.utils import BCEWithLogitsAccuracy, recording_train_valid_split
 from neurocode.datasets import RecordingDataset
 from neurocode.samplers import RelativePositioningSampler
-from neurocode.models import ContrastiveNet, StagerNet
+from neurocode.models import ContrastiveRP, StagerNet
 from braindecode.datasets.sleep_physionet import SleepPhysionet
 from braindecode.datautil.preprocess import preprocess, Preprocessor
 from braindecode.datautil.windowers import create_fixed_length_windows
@@ -60,7 +60,7 @@ samplers = dict(train=RelativePositioningSampler(datasets['train'].get_data(), d
 # Setup pytorch training, move models etc.
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 emb = StagerNet(n_channels, sfreq, dropout=.25).to(device)
-model = ContrastiveNet(emb, emb_size, dropout=.25).to(device)
+model = ContrastiveRP(emb, emb_size, dropout=.25).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=5e-4, weight_decay=1e-6)
 criterion = torch.nn.BCEWithLogitsLoss()
 
