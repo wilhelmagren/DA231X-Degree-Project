@@ -30,13 +30,19 @@ class SSTOSampler(PretextSampler):
             win_idx2 = -1
 
             if pair_type == 0:
+                while win_idx1 - self.tau <= 0:
+                    win_idx1 = self._sample_window(recording_idx=reco_idx)
+
                 win_idx2 = self._sample_window(recording_idx=reco_idx)
-                while win_idx2 >= win_idx1 and np.abs(win_idx2 - win_idx1) > self.tau:
+                while win_idx2 >= win_idx1 or np.abs(win_idx2 - win_idx1) >= self.tau:
                     win_idx2 = self._sample_window(recording_idx=reco_idx)
             
             elif pair_type == 1:
+                while win_idx1 + self.tau >= self.info['lengths'][reco_idx]:
+                    win_idx1 = self._sample_window(recording_idx=reco_idx)
+
                 win_idx2 = self._sample_window(recording_idx=reco_idx)
-                while win_idx2 <= win_idx1 and np.abs(win_idx2 - win_idx1) > self.tau:
+                while win_idx2 <= win_idx1 or np.abs(win_idx2 - win_idx1) >= self.tau:
                     win_idx2 = self._sample_window(recording_idx=reco_idx)
 
             batch_anchors.append(self.data[reco_idx][win_idx1][0][None])
@@ -45,7 +51,7 @@ class SSTOSampler(PretextSampler):
 
         ANCHORS = np.concatenate(batch_anchors, axis=0)
         SAMPLES = np.concatenate(batch_samples, axis=0)
-        LABELS = torch.Tensor(np.array(batch_labels))
+        LABELS = np.array(batch_labels)
 
         return (ANCHORS, SAMPLES, LABELS)
 

@@ -14,6 +14,7 @@ from enum import Enum
 CWD = os.getcwd()
 RELATIVE_LABEL_PATH = os.path.join(CWD, 'data/subjects.tsv')
 RELATIVE_MEG_PATH = os.path.join(CWD, 'data/data-ds-200Hz/')
+RELATIVE_CLEANED_MEG_PATH = os.path.join(CWD, 'data/data-cleaned/')
 DEFAULT_MEG_CHANNELS = ['MEG0811', 'MEG0812']
 RECORDING_ID_MAP = {
         0: 'ses-con_task-rest_ec',
@@ -113,10 +114,11 @@ def get_subject_age(f):
                 return float(line.split('\t')[1])
     raise ValueError
 
-def fetch_meg_data(subjects, recordings):
+def fetch_meg_data(subjects, recordings, cleaned):
+    megpath = RELATIVE_CLEANED_MEG_PATH if cleaned else RELATIVE_MEG_PATH
     included_files = list()
     subject_ids = pad_and_stringify(subjects, 2)
-    files = list(os.path.join(RELATIVE_MEG_PATH, f) for f in list(os.listdir(RELATIVE_MEG_PATH)) if get_subject_id(f) in subject_ids)
+    files = list(os.path.join(megpath, f) for f in list(os.listdir(megpath)) if get_subject_id(f) in subject_ids)
     for f in files:
         for recording in recordings:
             if RECORDING_ID_MAP[recording] in f:

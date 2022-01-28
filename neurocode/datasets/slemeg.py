@@ -19,17 +19,17 @@ from ..utils import fetch_meg_data, load_raw_fif
 
 class SLEMEG(BaseConcatDataset):
     def __init__(self, subjects=None, recordings=None,
-            preload=False, load_meg_only=True, channels=None):
+            preload=False, load_meg_only=True, channels=None, cleaned=False):
         if subjects is None:
             subjects = list(range(2, 34))
         if recordings is None:
             recordings = list(range(0, 4))
 
         super().__init__(self._fetch_and_load(
-            subjects, recordings, preload, load_meg_only, channels))
+            subjects, recordings, preload, load_meg_only, channels, cleaned))
 
-    def _fetch_and_load(self, subjects, recordings, preload, load_meg_only, channels):
-        fpaths = fetch_meg_data(subjects, recordings)
+    def _fetch_and_load(self, subjects, recordings, preload, load_meg_only, channels, cleaned):
+        fpaths = fetch_meg_data(subjects, recordings, cleaned)
         all_base_ds = list()
         for subj_id, reco_id, gender, age, path in fpaths:
             raw, desc = load_raw_fif(

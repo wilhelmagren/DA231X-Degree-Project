@@ -4,12 +4,11 @@ on pretext task sampling labels. The net requires an embedder
 model which is used for feature extraction.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 27-01-2022
+Last edited: 28-01-2022
 """
 import torch
 
 from torch import nn
-from ..datautil import CWT
 
 class ContrastiveRP(nn.Module):
     def __init__(self, emb, emb_size, dropout=.5):
@@ -28,6 +27,27 @@ class ContrastiveRP(nn.Module):
         x1, x2 = x
         z1, z2 = self.emb(x1), self.emb(x2)
         return self.clf(torch.abs(z1-z2))
+
+
+class ContrastiveTS(nn.Module):
+    def __init__(self, emb, emb_size, dropout=.25, **kwargs):
+        super(ContrastiveTS, self).__init__()
+
+        self.emb = emb
+        self.emb_size = emb_size
+        self.clf = nn.Sequential(
+                nn.Dropout(dropout),
+                nn.Linear(2*emb_size, 1)
+                )
+
+    def __str__(self):
+        return 'ContrastiveTS'
+
+    def forward(self, x):
+        x1, x2, x3 = x
+        z1, z2, z3 = self.emb(x1), self.emb(x2), self.emb(x3)
+        return self.clf(torch.cat((torch.abs(z1 - z2), torch.abs(z2 - z3)), dim=1))
+
 
 
 class ContrastiveSSTO(nn.Module):
