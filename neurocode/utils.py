@@ -2,7 +2,7 @@
 utility functions et al.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 27-01-2022
+Last edited: 29-11-2021
 """
 import mne
 import os
@@ -14,6 +14,7 @@ from enum import Enum
 CWD = os.getcwd()
 RELATIVE_LABEL_PATH = os.path.join(CWD, 'data/subjects.tsv')
 RELATIVE_MEG_PATH = os.path.join(CWD, 'data/data-ds-200Hz/')
+RELATIVE_CLEANED_MEG_PATH = os.path.join(CWD, 'data/data-cleaned/')
 DEFAULT_MEG_CHANNELS = ['MEG0811', 'MEG0812']
 RECORDING_ID_MAP = {
         0: 'ses-con_task-rest_ec',
@@ -21,44 +22,25 @@ RECORDING_ID_MAP = {
         2: 'ses-psd_task-rest_ec',
         3: 'ses-psd_task-rest_eo'}
 
-def train_valid_split(X, y, split=.6, shuffle=False, **kwargs):
-    if X.shape[0] != y.shape[0]:
-        raise ValueError(f'data and label arrays must have the same amount of items! X={X.shape}, y={y.shape}')
-
-    split_idx = int(X.shape[0] * split)
-    
-    if shuffle:
-        indices = np.arange(X.shape[0])
-        np.random.shuffle(indices)
-        X, y = X[indices], y[indices]
-
-    X_train, X_valid = X[:split_idx], X[split_idx:]
-    y_train, y_valid = y[:split_idx], y[split_idx:]
-    return X_train, y_train, X_valid, y_valid
-
-def recording_train_valid_split(recordings, split=.6, **kwargs):
+def recording_train_valid_split(recordings, split=.6):
     split_idx = int(len(recordings) * split)
-    train_range = list(range(split_idx))
-    valid_range = list(range(split_idx, len(recordings)))
+    train_indices = list(range(split_idx))
+    valid_indices = list(range(split_idx, len(recordings)))
 
-    recordings_train = {k: recordings[k] for k in train_range}
-    recordings_valid = {(k-split_idx): recordings[k] for k in valid_range}
-    return recordings_train, recordings_valid
-
+    recordings_train = {k: recordings[k] for k in train_indices}
+    recordings_valid = {k: recordings[k] for k in valid_indices}
+    return (recordings_train, recordings_valid)
 
 def BCEWithLogitsAccuracy(outputs, labels):
     outputs, labels = torch.flatten(outputs), torch.flatten(labels)
     outputs = outputs > 0.
     return (outputs == labels).sum().item()
 
-def load_raw_fif(fpath, subj_id, reco_id, preload, drop_channels=False, channels=None):
-    if not channels:
-        channels = DEFAULT_MEG_CHANNELS
-
+def load_raw_fif(fpath, subj_id, reco_id, preload, drop_channels=False):
     raw = mne.io.read_raw_fif(fpath, preload=True)   # we need to preload, otherwise can't access data
     
     if drop_channels:
-        exclude = list(ch for ch in list(map(lambda ch: None if ch in channels else ch, raw.info['ch_names'])) if ch)
+        exclude = list(ch for ch in list(map(lambda ch: None if ch in DEFAULT_MEG_CHANNELS else ch, raw.info['ch_names'])) if ch)
         raw.drop_channels(exclude)
     
     desc = pd.Series({'subject': subj_id, 'recording': reco_id}, name='')
@@ -113,10 +95,11 @@ def get_subject_age(f):
                 return float(line.split('\t')[1])
     raise ValueError
 
-def fetch_meg_data(subjects, recordings):
+def fetch_meg_data(subjects, recordings, cleaned):
+    megpath = RELATIVE_CLEANED_MEG_PATH if cleaned else RELATIVE_MEG_PATH
     included_files = list()
     subject_ids = pad_and_stringify(subjects, 2)
-    files = list(os.path.join(RELATIVE_MEG_PATH, f) for f in list(os.listdir(RELATIVE_MEG_PATH)) if get_subject_id(f) in subject_ids)
+    files = list(os.path.join(megpath, f) for f in list(os.listdir(megpath)) if get_subject_id(f) in subject_ids)
     for f in files:
         for recording in recordings:
             if RECORDING_ID_MAP[recording] in f:
