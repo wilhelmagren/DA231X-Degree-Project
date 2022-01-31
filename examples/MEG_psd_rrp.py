@@ -1,11 +1,10 @@
 """
 Self-supervised Learning pipeline for SLEMEG dataset project.
 Utilizes the auxiliary task 'Recording Relative Positioning' 
-and samples there-after. Currently performs well, but 
-quality of extracted features have to be analyzed and investigated.
+and samples there-after. See results in subdir 'results/RRP/' 
 
-TODO: implement automatic extraction of embeddings, automatic t-SNE
-      visualization with respect to subject labels and metadata.
+
+TODO: formalize training in a neurocode module.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
 Last edited: 31-01-2022
@@ -19,6 +18,7 @@ from neurocode.utils import BCEWithLogitsAccuracy
 from neurocode.datasets import RecordingDataset, SLEMEG
 from neurocode.samplers import RRPSampler
 from neurocode.models import ContrastiveNet, StagerNet
+from neurocode.datautil import tSNE_plot
 from braindecode.datautil.preprocess import preprocess, Preprocessor, zscore
 from braindecode.datautil.windowers import create_fixed_length_windows
 
@@ -58,10 +58,13 @@ recording_dataset = RecordingDataset(windows_dataset.datasets, dataset.labels, s
 train_dataset, valid_dataset = recording_dataset.split(split=.7)
 
 # set up recording-relative-positioning sampler with MEG recording dataset
-samplers = {'train': RRPSampler(train_dataset.get_data(), train_dataset.get_info(),
-                tau=tau_pos, gamma=gamma, n_samples=n_samples, batch_size=batch_size),
-            'valid': RRPSampler(valid_dataset.get_data(), valid_dataset.get_info(),
-                tau=tau_pos, gamma=gamma, n_samples=n_samples, batch_size=batch_size)}
+samplers = {'train': RRPSampler(train_dataset.get_data(), train_dataset.get_labels(),
+                train_dataset.get_info(), tau=tau_pos, gamma=gamma, 
+                n_samples=n_samples, batch_size=batch_size),
+            'valid': RRPSampler(valid_dataset.get_data(), valid_dataset.get_labels(),
+                valid_dataset.get_info(), tau=tau_pos, gamma=gamma,
+                n_samples=n_samples, batch_size=batch_size)}
+
 
 # Setup pytorch training, move models etc.
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -69,6 +72,11 @@ emb = StagerNet(n_channels, sfreq, n_conv_chs=8, dropout=.25, input_size_s=5.).t
 model = ContrastiveNet(emb, emb_size, dropout=.25).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=5e-4, weight_decay=1e-6)
 criterion = torch.nn.BCEWithLogitsLoss()
+
+
+print(f'extracting embeddings before training...')
+embeddings = {'pre': samplers['valid']._extract_embeddings(emb, device)}
+tSNE_plot(embeddings['pre'], 'before')
 
 epochs = 20
 history = {'tloss': [], 'vloss': [], 'tacc': [], 'vacc': []}
@@ -108,6 +116,9 @@ for epoch in range(epochs):
     history['vacc'].append(vacc)
     print(f'    {epoch+1:02d}         {tloss:.5f}         {vloss:.5f}          {100*tacc:.2f}%          {100*vacc:.2f}%')
 
+print(f'extracting embeddings after training...')
+embeddings['post'] = samplers['valid']._extract_embeddings(emb, device)
+tSNE_plot(embeddings['post'], 'after')
 
 fig, ax1 = plt.subplots(figsize=(8,3))
 ax2 = ax1.twinx()
