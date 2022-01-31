@@ -1,0 +1,21 @@
+subjects: [2, ..., 12]
+recordings: [0,1,2,3]
+window_size = 5s
+tau = 5
+gamma = .5
+n_samples = 256
+batch_size = 32
+channels = [MEG2032, MEG2033]
+emb_size = 100
+
+PREPROCESSING:
+    - cleaned data (ICA artifact removal)
+    - zscoring (channel-wise & window-wise)
+
+train/valid split = 70/30
+
+n_conv_chs = 8
+dropout = .25
+learning rate = 5e-4
+weight decay = 1e-6
+epochs = 20
