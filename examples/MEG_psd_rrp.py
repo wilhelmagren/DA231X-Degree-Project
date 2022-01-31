@@ -18,7 +18,7 @@ from neurocode.utils import BCEWithLogitsAccuracy
 from neurocode.datasets import RecordingDataset, SLEMEG
 from neurocode.samplers import RRPSampler
 from neurocode.models import ContrastiveNet, StagerNet
-from neurocode.datautil import tSNE_plot
+from neurocode.datautil import tSNE_plot, history_plot
 from braindecode.datautil.preprocess import preprocess, Preprocessor, zscore
 from braindecode.datautil.windowers import create_fixed_length_windows
 
@@ -78,7 +78,7 @@ print(f'extracting embeddings before training...')
 embeddings = {'pre': samplers['valid']._extract_embeddings(emb, device)}
 tSNE_plot(embeddings['pre'], 'before')
 
-epochs = 20
+epochs = 5
 history = {'tloss': [], 'vloss': [], 'tacc': [], 'vacc': []}
 print(f'starting model training for {epochs} epochs on device={device}')
 print(f'  epoch    training loss   validation loss   training acc   validation acc')
@@ -120,19 +120,4 @@ print(f'extracting embeddings after training...')
 embeddings['post'] = samplers['valid']._extract_embeddings(emb, device)
 tSNE_plot(embeddings['post'], 'after')
 
-fig, ax1 = plt.subplots(figsize=(8,3))
-ax2 = ax1.twinx()
-ax1.plot(history['tloss'], ls='-', marker='1', ms=5, alpha=.7, color='tab:blue', label='training loss')
-ax1.plot(history['vloss'], ls=':', marker='1', ms=5, alpha=.7, color='tab:blue', label='validation loss')
-ax2.plot(history['tacc'], ls='-', marker='2', ms=5, alpha=.7, color='tab:orange', label='training acc')
-ax2.plot(history['vacc'], ls=':', marker='2', ms=5, alpha=.7, color='tab:orange', label='validation acc')
-ax1.tick_params(axis='y', labelcolor='tab:blue')
-ax1.set_ylabel('Loss', color='tab:blue')
-ax2.tick_params(axis='y', labelcolor='tab:orange')
-ax2.set_ylabel('Accuracy [%]', color='tab:orange')
-ax1.set_xlabel('Epoch')
-lines1, labels1 = ax1.get_legend_handles_labels()
-lines2, labels2 = ax2.get_legend_handles_labels()
-ax2.legend(lines1+lines2, labels1+labels2)
-plt.tight_layout()
-plt.savefig('RRP_training.png')
+history_plot(history)

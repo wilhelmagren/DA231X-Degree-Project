@@ -86,3 +86,44 @@ def tSNE_plot(X, title, n_components=2, perplexity=30.0, savefig=True):
             plt.savefig(f'tSNE_{cls}_{title}-training.png')
         plt.show()
 
+def history_plot(history, savefig=True):
+    fig, ax1 = plt.subplots(figsize=(8,3))
+    ax2 = None
+
+    if 'tacc' in history or 'vacc' in history:
+        ax2 = ax1.twinx()
+    
+    ax1.plot(history['tloss'], ls='-', marker='1', ms=5, alpha=.7,
+            color='tab:blue', label='training loss')
+
+    if 'vloss' in history:
+        ax1.plot(history['vloss'], ls=':', marker='1', ms=5, alpha=.7,
+                color='tab:blue', label='validation loss')
+
+    if 'tacc' in history:
+        ax2.plot(history['tacc'], ls='-', marker='2', ms=5, alpha=.7,
+                color='tab:orange', label='training acc')
+
+    if 'vacc' in history:
+        ax2.plot(history['vacc'], ls=':', marker='2', ms=5, alpha=.7,
+                color='tab:orange', label='validation acc')
+    
+    ax1.tick_params(axis='y', labelcolor='tab:blue')
+    ax1.set_ylabel('Loss', color='tab:blue')
+    ax1.set_xlabel('Epoch')
+    lines1, labels1 = ax1.get_legend_handles_labels()
+
+    if ax2:
+        ax2.tick_params(axis='y', labelcolor='tab:orange')
+        ax2.set_ylabel('Accuracy [%]', color='tab:orange')
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        ax2.legend(lines1+lines2, labels1+labels2)
+    else:
+        ax1.legend(lines1, labels1)
+
+    plt.tight_layout()
+    plt.show()
+    
+    if savefig:
+        plt.savefig(f'training_history.png')
+
