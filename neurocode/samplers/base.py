@@ -3,17 +3,18 @@ implementation of Pretext task sampler parent class for each specific sampler,
 built using torch Sampler. 
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 30-11-2021
+Last edited: 31-01-2022
 """
-
+import torch
 import numpy as np
 
 from torch.utils.data.sampler import Sampler
 
 
 class PretextSampler(Sampler):
-    def __init__(self, data, info, **kwargs):
+    def __init__(self, data, labels, info, **kwargs):
         self.data = data
+        self.labels = labels
         self.info = info
         self._parameters(**kwargs)
         self._setup(**kwargs)
@@ -34,8 +35,21 @@ class PretextSampler(Sampler):
 
         if presample:
             self._presample()
-
  
+    def _extract_embeddings(self, emb, device, n_samples_per_recording=None):
+        X, Y = [], []
+        emb.eval()
+        with torch.no_grad():
+            for reco_idx in range(len(self.data)):
+                for window in self.data[reco_idx]:
+                    window = torch.Tensor(window[0][None]).to(device)
+                    embedding = emb(window)
+                    X.append(embedding[0, :][None])
+                    Y.append(self.labels[reco_idx])
+        X = np.concatenate([x.cpu().detach().numpy() for x in X], axis=0)
+        return (X, Y)
+        
+
     def _parameters(self, *args, **kwargs):
         raise NotImplementedError(
                 'Please implement setup for parameters of pretext-task sampling!')
