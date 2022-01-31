@@ -19,3 +19,8 @@ dropout = .25
 learning rate = 5e-4
 weight decay = 1e-6
 epochs = 20
+
+NOTES:
+    - no clear separation in data prior to training, whereas there is clear separation based
+	on some labels after training (e.g. eo-ec, con-psd, and reco)
+    - training looks good, validation scores follows training while not being better.
