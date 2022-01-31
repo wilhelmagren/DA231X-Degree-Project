@@ -22,5 +22,9 @@ epochs = 20
 
 NOTES:
     - no clear separation in data prior to training, whereas there is clear separation based
-	on some labels after training (e.g. eo-ec, con-psd, and reco)
+	on some labels after training (e.g. eo-ec, con-psd, and reco). Most notable is 
+	probably that for 'tsne_post_reco.png' there is overlapping for the eyes-open classes,
+	but eyes-closed are clearly separated from the rest. Potentially because they subject
+	is tired, and having the eyes closed leads the subject to want to sleep? (Potentially
+	more theta waves, if I'm not mistaken...)
     - training looks good, validation scores follows training while not being better.
