@@ -8,7 +8,7 @@ TODO: implement automatic extraction of embeddings, automatic t-SNE
       visualization with respect to subject labels and metadata.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 30-01-2022
+Last edited: 31-01-2022
 """
 import os
 import torch
@@ -19,7 +19,7 @@ from neurocode.utils import BCEWithLogitsAccuracy
 from neurocode.datasets import RecordingDataset, SLEMEG
 from neurocode.samplers import RRPSampler
 from neurocode.models import ContrastiveNet, StagerNet
-from braindecode.datautil.preprocess import preprocess, Preprocessor
+from braindecode.datautil.preprocess import preprocess, Preprocessor, zscore
 from braindecode.datautil.windowers import create_fixed_length_windows
 
 
@@ -30,9 +30,10 @@ window_size_s = 5
 sfreq = 200
 window_size_samples = window_size_s * sfreq
 subjects = list(range(2,12))
-recordings = [1,3]
+recordings = [0,1,2,3]
 tau_pos = 5
 tau_neg = 30
+gamma = .5
 n_samples = 256
 batch_size = 32
 n_channels = 2
@@ -42,12 +43,15 @@ preprocessors = [Preprocessor(lambda x: x*1e12)]
 
 # fetch the dataset
 dataset = SLEMEG(subjects=subjects, recordings=recordings, preload=True,
-        load_meg_only=True, preprocessors=preprocessors, cleaned=False)
+        load_meg_only=True, preprocessors=preprocessors, cleaned=True)
 
 # create 5 second windows of data from the preprocessed SLEMEG dataset
 windows_dataset = create_fixed_length_windows(dataset, start_offset_samples=0, 
         stop_offset_samples=0, drop_last_window=True, window_size_samples=window_size_samples,
         window_stride_samples=window_size_samples, preload=True)
+
+# "normalize" each window and channel repsectively, using zscoring for scaling
+preprocess(windows_dataset, [Preprocessor(zscore)])
 
 # reformat from BaseConcatDataset to RecordingDataset and perform 70/30 split into train/valid
 recording_dataset = RecordingDataset(windows_dataset.datasets, dataset.labels, sfreq=sfreq, channels='MEG')
@@ -55,13 +59,13 @@ train_dataset, valid_dataset = recording_dataset.split(split=.7)
 
 # set up recording-relative-positioning sampler with MEG recording dataset
 samplers = {'train': RRPSampler(train_dataset.get_data(), train_dataset.get_info(),
-                tau=tau_pos, gamma=.5, n_samples=n_samples, batch_size=batch_size),
+                tau=tau_pos, gamma=gamma, n_samples=n_samples, batch_size=batch_size),
             'valid': RRPSampler(valid_dataset.get_data(), valid_dataset.get_info(),
-                tau=tau_pos, gamma=.5, n_samples=n_samples, batch_size=batch_size)}
+                tau=tau_pos, gamma=gamma, n_samples=n_samples, batch_size=batch_size)}
 
 # Setup pytorch training, move models etc.
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-emb = StagerNet(n_channels, sfreq, dropout=.25, input_size_s=5.).to(device)
+emb = StagerNet(n_channels, sfreq, n_conv_chs=8, dropout=.25, input_size_s=5.).to(device)
 model = ContrastiveNet(emb, emb_size, dropout=.25).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=5e-4, weight_decay=1e-6)
 criterion = torch.nn.BCEWithLogitsLoss()
