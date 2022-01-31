@@ -1,4 +1,7 @@
 """
+Module for plotting information, such as 
+manifold projection of embeddings 
+or training history. Work in progress.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
 Last edited: 31-01-2022
@@ -91,6 +94,21 @@ def tSNE_plot(X, title, n_components=2, perplexity=30.0):
     ax.legend(*zip(*uniques))
     fig.suptitle(f'tSNE of embeddings, subject state/recording, {title} training')
     plt.show()
+
+    fig, ax = plt.subplots()
+    age_labels = np.unique(labels['age'])
+    print(age_labels)
+    age_colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(age_labels))]
+    for k, col in zip(age_labels, age_colors):
+        class_member_mask = labels['age'] == k
+        xy = components[class_member_mask]
+        ax.scatter(xy[:, 0], xy[:, 1], alpha=.6, color=col, label=f'Age {k}')
+    handles, lbls = ax.get_legend_handles_labels()
+    uniques = [(h, l) for i, (h, l) in enumerate(zip(handles, lbls)) if l not in lbls[:i]]
+    ax.legend(*zip(*uniques))
+    fig.suptitle(f'tSNE of embeddings, subject age, {title} training')
+    plt.show()
+
 
 
 
