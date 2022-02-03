@@ -30,6 +30,31 @@ def tSNE_plot(X, title, n_components=2, perplexity=30.0, savefig=True):
     Currently this function is hardcoded for the SLEMEG dataset, 
     modify labels accordingly if you are planning on using this
     visualization with another dataset.
+
+    Parameters
+    ----------
+    X: tuple
+        Contains two items (np.array, list) where the np.array is 
+        a collection of extracted embeddings and the list are the
+        respective embedding labels. 
+    title: str
+        Used for the plots, usually either `before` or `after` to 
+        specify if embeddings where extracted prior- or post-
+        training. 
+    n_components: int | float
+        Specifier for number of dimensions to reduce embeddings to,
+        by means of t-SNE. Since we want a 2D plot, almost always,
+        leave this set at 2 as default.
+    perplexity: float
+        Sets hyperparameter for t-SNE, determines complexity of 
+        resulting visualization.
+    savefig: bool
+       Saves the produced plots if true, filenames are based on 
+       subject labels that the plot represents and based on title
+       arg as well. 
+
+    For more information on manifold learning, see sklearn.manifold 
+    documentation for t-SNE, or see the original paper.
     """
     embeddings, Y = X
     tSNE = TSNE(n_components=n_components, perplexity=perplexity)
@@ -85,4 +110,57 @@ def tSNE_plot(X, title, n_components=2, perplexity=30.0, savefig=True):
         if savefig:
             plt.savefig(f'tSNE_{cls}_{title}-training.png')
         plt.show()
+
+def history_plot(history, savefig=True):
+    """func takes lists of training metrics and visualizes them in a combined plot.
+    If you want more customizability then use your own plotting. 
+
+    Parameters
+    ----------
+    history: dict
+        Dictionary containing training/testing metrics, valid keys
+        are: `tloss`, `vloss`, `tacc`, `vacc`.
+    savefig: bool
+        Saves the produces plot to the curent working directory of
+        the user. 
+    """
+    fig, ax1 = plt.subplots(figsize=(8,3))
+    ax2 = None
+
+    if 'tacc' in history or 'vacc' in history:
+        ax2 = ax1.twinx()
+    
+    ax1.plot(history['tloss'], ls='-', marker='1', ms=5, alpha=.7,
+            color='tab:blue', label='training loss')
+
+    if 'vloss' in history:
+        ax1.plot(history['vloss'], ls=':', marker='1', ms=5, alpha=.7,
+                color='tab:blue', label='validation loss')
+
+    if 'tacc' in history:
+        ax2.plot(history['tacc'], ls='-', marker='2', ms=5, alpha=.7,
+                color='tab:orange', label='training acc')
+
+    if 'vacc' in history:
+        ax2.plot(history['vacc'], ls=':', marker='2', ms=5, alpha=.7,
+                color='tab:orange', label='validation acc')
+    
+    ax1.tick_params(axis='y', labelcolor='tab:blue')
+    ax1.set_ylabel('Loss', color='tab:blue')
+    ax1.set_xlabel('Epoch')
+    lines1, labels1 = ax1.get_legend_handles_labels()
+
+    if ax2:
+        ax2.tick_params(axis='y', labelcolor='tab:orange')
+        ax2.set_ylabel('Accuracy [%]', color='tab:orange')
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        ax2.legend(lines1+lines2, labels1+labels2)
+    else:
+        ax1.legend(lines1, labels1)
+
+    plt.tight_layout()
+    plt.show()
+    
+    if savefig:
+        plt.savefig(f'training_history.png')
 
