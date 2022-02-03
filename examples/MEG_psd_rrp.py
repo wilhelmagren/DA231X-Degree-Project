@@ -7,7 +7,7 @@ and samples there-after. See results in subdir 'results/RRP/'
 TODO: formalize training in a neurocode module.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 31-01-2022
+Last edited: 03-02-2022
 """
 import os
 import torch
@@ -29,7 +29,7 @@ n_jobs=1
 window_size_s = 5
 sfreq = 200
 window_size_samples = window_size_s * sfreq
-subjects = list(range(2,12))
+subjects = list(range(2,34))
 recordings = [0,1,2,3]
 tau_pos = 5
 tau_neg = 30
