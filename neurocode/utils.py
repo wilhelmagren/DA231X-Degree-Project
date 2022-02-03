@@ -15,7 +15,7 @@ CWD = os.getcwd()
 RELATIVE_LABEL_PATH = os.path.join(CWD, 'data/subjects.tsv')
 RELATIVE_MEG_PATH = os.path.join(CWD, 'data/data-ds-200Hz/')
 RELATIVE_CLEANED_MEG_PATH = os.path.join(CWD, 'data/data-cleaned/')
-DEFAULT_MEG_CHANNELS = ['MEG2032', 'MEG2033']
+DEFAULT_MEG_CHANNELS = ['MEG2032']  # ['MEG2032', 'MEG2033']
 RECORDING_ID_MAP = {
         0: 'ses-con_task-rest_ec',
         1: 'ses-con_task-rest_eo',
