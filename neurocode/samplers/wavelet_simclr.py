@@ -12,6 +12,7 @@ from PIL import Image
 from scipy import signal
 from torchvision import transforms
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 
 class ContrastiveViewGenerator(object):
@@ -48,9 +49,7 @@ class WaveletSimCLR(Dataset):
         self.premake = premake
         self.transform = transform
         self.preprocess = transforms.Compose([
-            transforms.RandomResizedCrop(widths, scale=(.75, .95)),
-            transforms.RandomHorizontalFlip(p=.5),
-            transforms.RandomVerticalFlip(p=.3),
+            transforms.RandomResizedCrop(widths, scale=(.5, .95)),
             transforms.Grayscale(num_output_channels=3),
             transforms.ToTensor()])
 
@@ -67,11 +66,29 @@ class WaveletSimCLR(Dataset):
             for (window, _, _) in windows:
                 cwt_matrix = signal.cwt(window.squeeze(0), signal.ricker, np.arange(1, self.widths + 1))
                 remade_data.append(cwt_matrix)
-                remade_labels.append(self.labels[recording][0])
+                remade_labels.append(self.labels[recording])
         
         assert len(remade_data) == sum(self.info['lengths'].values()), (
                 'remade data doesn`t have the same amount of windows as previous data.')
         
         self.data = remade_data
         self.labels = remade_labels
+
+    def _extract_embeddings(self, emb, device):
+        X, Y = [], []
+        emb.eval()
+        grayscaler = transforms.Compose([
+            transforms.Grayscale(num_output_channels=3),
+            transforms.ToTensor()])
+        with torch.no_grad():
+            for index in tqdm(range(len(self)), total=len(self)):
+                if index % 20 != 0:
+                    continue
+                scalogram = grayscaler(Image.fromarray(self.data[index])).to(device)
+                embedding = emb(scalogram.unsqueeze(0))
+                X.append(embedding[0, :][None])
+                Y.append(self.labels[index])
+        X = np.concatenate([x.cpu().detach().numpy() for x in X], axis=0)
+        return (X, Y)
+
 
