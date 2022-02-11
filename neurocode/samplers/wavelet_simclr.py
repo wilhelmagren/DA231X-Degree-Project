@@ -21,7 +21,6 @@ class ContrastiveViewGenerator(object):
         self.n_views = n_views
 
     def __call__(self, x):
-        x = Image.fromarray(x)
         return [self.transforms(x) for _ in range(self.n_views)]
 
 
@@ -43,15 +42,19 @@ class WaveletSimCLR(Dataset):
 
         return (self.data[index], self.labels[index])
 
-    def _setup(self, n_views=2, widths=100, premake=True, transform=False, **kwargs):
+    def _setup(self, n_views=2, widths=100, shape=(128, 128), premake=True, transform=False, **kwargs):
+        self.shape = shape
         self.n_views = n_views
         self.widths = widths
         self.premake = premake
         self.transform = transform
         self.preprocess = transforms.Compose([
-            transforms.RandomResizedCrop(widths, scale=(.5, .95)),
-            transforms.Grayscale(num_output_channels=3),
-            transforms.ToTensor()])
+            transforms.RandomResizedCrop(self.shape, scale=(.5, .95)),
+            transforms.RandomInvert(p=.25),
+            transforms.RandomHorizontalFlip(p=.3),
+            transforms.RandomVerticalFlip(p=.3),
+            # transforms.RandomRotation((-45, 45)),
+            ])
 
         self.transforms = ContrastiveViewGenerator(
                 self.preprocess, n_views)
@@ -62,9 +65,13 @@ class WaveletSimCLR(Dataset):
     def _remake_dataset(self):
         remade_data = []
         remade_labels  = []
+        resizer = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize(self.shape)])
         for recording, windows in self.data.items():
             for (window, _, _) in windows:
                 cwt_matrix = signal.cwt(window.squeeze(0), signal.ricker, np.arange(1, self.widths + 1))
+                cwt_matrix = resizer(cwt_matrix)
                 remade_data.append(cwt_matrix)
                 remade_labels.append(self.labels[recording])
         
@@ -77,18 +84,17 @@ class WaveletSimCLR(Dataset):
     def _extract_embeddings(self, emb, device):
         X, Y = [], []
         emb.eval()
-        grayscaler = transforms.Compose([
-            transforms.Grayscale(num_output_channels=3),
-            transforms.ToTensor()])
+        emb._return_features = True
         with torch.no_grad():
             for index in tqdm(range(len(self)), total=len(self)):
-                if index % 20 != 0:
+                if index % 25 != 0:
                     continue
-                scalogram = grayscaler(Image.fromarray(self.data[index])).to(device)
-                embedding = emb(scalogram.unsqueeze(0))
+                scalogram = self.data[index].to(device)
+                embedding = emb(scalogram.unsqueeze(0).float())
                 X.append(embedding[0, :][None])
                 Y.append(self.labels[index])
         X = np.concatenate([x.cpu().detach().numpy() for x in X], axis=0)
+        emb._return_features = False
         return (X, Y)
 
 

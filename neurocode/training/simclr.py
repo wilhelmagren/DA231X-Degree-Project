@@ -6,9 +6,10 @@ Last edited: 03-02-2022
 """
 import torch
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
 
-from torch.cuda.amp import GradScaler, autocast
 from tqdm import tqdm
+from collections import defaultdict
 
 torch.manual_seed(0)
 
@@ -67,23 +68,62 @@ class SimCLR(object):
         logits = logits / self.temperature
         return (logits, labels)
 
-    def fit(self, dataloader):
-        scaler = GradScaler()
+    def fit(self, dataloaders):
+        print(f'Training encoder with SimCLR on device={self.device} for {self.epochs} epochs')
+        print(f'   epoch       training loss       validation loss         training acc        validation acc')
+        print(f'------------------------------------------------------------------------------------------------')
+        history =  defaultdict(list)
         for epoch in range(self.epochs):
-            tloss = 0
-            for images in tqdm(dataloader):
-                images = torch.cat(images, dim=0).to(self.device)
+            self.model.train()
+            tloss, tacc = 0., 0.
+            vloss, vacc = 0., 0.
+            for images in dataloaders['train']:  
+                anchors, samples = images
+                images = torch.cat((anchors, samples)).float().to(self.device)
+                embeddings = self.model(images)
 
-                with autocast():
-                    features = self.model(images)
-                    logits, labels = self.info_nce_loss(features)
-                    loss = self.criterion(logits, labels)
+                """
+                fig, axs = plt.subplots(1, 2)
+                axs[0].imshow(torch.swapaxes(images[0, :].cpu(), 0, 2).numpy())
+                axs[1].imshow(torch.swapaxes(images[64, :].cpu(), 0, 2).numpy())
+                plt.show()
+                print(images.shape)
+                """
+
+                indices = torch.arange(0, anchors.size(0), device=anchors.device)
+                labels = torch.cat((indices, indices)).to(self.device)
+
+                loss = self.criterion(embeddings, labels)
 
                 self.optimizer.zero_grad()
-                scaler.scale(loss).backward()
-                scaler.step(self.optimizer)
-                scaler.update()
-                tloss += loss.item() / images.shape[0]
+                loss.backward()
+                self.optimizer.step()
+                tloss += loss.item() / embeddings.shape[0]
+                _, predicted = torch.max(embeddings.data, 1)
+                tacc += (labels == predicted).sum().item() / embeddings.shape[0]
 
-            print(f'{epoch=}   {tloss=}')
+            with torch.no_grad():
+                self.model.eval()
+                for images in dataloaders['valid']:
+                    anchors, samples = images
+                    images = torch.cat((anchors, samples)).float().to(self.device)
+                    embeddings = self.model(images)
+
+                    indices = torch.arange(0, anchors.size(0), device=anchors.device)
+                    labels = torch.cat((indices, indices)).to(self.device)
+
+                    loss = self.criterion(embeddings, labels)
+                    vloss += loss.item() / embeddings.shape[0]
+                    _, predicted = torch.max(embeddings.data, 1)
+                    vacc += (labels == predicted).sum().item() / embeddings.shape[0]
+
+            self.scheduler.step()
+            tloss /= len(dataloaders['train'])
+            vloss /= len(dataloaders['valid'])
+            history['tloss'].append(tloss)
+            history['vloss'].append(vloss)
+            print(f'     {epoch + 1:02d}            {tloss:.4f}              {vloss:.4f}                  {tacc:.2f}%                 {vacc:.2f}%')
+
+        return history
+
 
