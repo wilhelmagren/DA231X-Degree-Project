@@ -77,7 +77,7 @@ class SimCLR(object):
             self.model.train()
             tloss, tacc = 0., 0.
             vloss, vacc = 0., 0.
-            for images in dataloaders['train']:  
+            for images in dataloaders['train']:
                 anchors, samples = images
                 images = torch.cat((anchors, samples)).float().to(self.device)
                 embeddings = self.model(images)
@@ -99,8 +99,6 @@ class SimCLR(object):
                 loss.backward()
                 self.optimizer.step()
                 tloss += loss.item() / embeddings.shape[0]
-                _, predicted = torch.max(embeddings.data, 1)
-                tacc += (labels == predicted).sum().item() / embeddings.shape[0]
 
             with torch.no_grad():
                 self.model.eval()
@@ -114,8 +112,6 @@ class SimCLR(object):
 
                     loss = self.criterion(embeddings, labels)
                     vloss += loss.item() / embeddings.shape[0]
-                    _, predicted = torch.max(embeddings.data, 1)
-                    vacc += (labels == predicted).sum().item() / embeddings.shape[0]
 
             self.scheduler.step()
             tloss /= len(dataloaders['train'])

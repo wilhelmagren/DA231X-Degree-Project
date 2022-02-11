@@ -19,14 +19,14 @@ from braindecode.datautil.preprocess import preprocess, Preprocessor, zscore
 from pytorch_metric_learning import losses
 
 
-subjects = list(range(2,7))
+subjects = list(range(5,10))
 recordings = [0,1,2,3]
 batch_size = 128
 window_size_s = .5
 input_shape = (1, 96, 96)
 widths = 50
 n_views = 2
-n_epochs = 10
+n_epochs = 20
 temperature = .7
 sfreq = 200
 window_size_samples = np.ceil(sfreq * window_size_s).astype(int)
@@ -75,5 +75,5 @@ history = simclr.fit(dataloaders)
 history_plot(history)
 
 print(f'Extracting post-training embeddings...')
-tSNE_plot(loaders['valid']._extract_embeddings(model, device), 'post')
+tSNE_plot(loaders['train']._extract_embeddings(model, device), 'post')
 

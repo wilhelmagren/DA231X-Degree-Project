@@ -49,11 +49,11 @@ class WaveletSimCLR(Dataset):
         self.premake = premake
         self.transform = transform
         self.preprocess = transforms.Compose([
-            transforms.RandomResizedCrop(self.shape, scale=(.5, .95)),
             transforms.RandomInvert(p=.25),
             transforms.RandomHorizontalFlip(p=.3),
             transforms.RandomVerticalFlip(p=.3),
-            # transforms.RandomRotation((-45, 45)),
+            transforms.RandomRotation((-20, 20)),
+            transforms.RandomResizedCrop(self.shape, scale=(.5, .95))
             ])
 
         self.transforms = ContrastiveViewGenerator(
@@ -87,7 +87,7 @@ class WaveletSimCLR(Dataset):
         emb._return_features = True
         with torch.no_grad():
             for index in tqdm(range(len(self)), total=len(self)):
-                if index % 25 != 0:
+                if index % 30 != 0:
                     continue
                 scalogram = self.data[index].to(device)
                 embedding = emb(scalogram.unsqueeze(0).float())

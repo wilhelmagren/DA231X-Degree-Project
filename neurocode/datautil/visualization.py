@@ -102,7 +102,7 @@ def tSNE_plot(X, title, n_components=2, perplexity=30.0, savefig=True):
         for idx, (k, col) in enumerate(zip(unique_labels[cls], colors)):
             class_mask = labels[cls] == k
             xy = components[class_mask]
-            ax.scatter(xy[:, 0], xy[:, 1], alpha=.6, color=col, label=unique_ll[cls][idx])
+            ax.scatter(xy[:, 0], xy[:, 1], alpha=.5, color=col, label=unique_ll[cls][idx])
         handles, lbls = ax.get_legend_handles_labels()
         uniques = [(h, l) for i, (h, l) in enumerate(zip(handles, lbls)) if l not in lbls[:i]]
         ax.legend(*zip(*uniques))
