@@ -27,6 +27,8 @@ from mne.preprocessing import ICA, create_eog_epochs, create_ecg_epochs
 
 plot = True
 save = False
+duration = 30
+n_channels = 10
 relative_dirty_MEG = 'data/data-ds-200Hz/'
 relative_cleaned_MEG = 'data/data-cleaned/'
 
@@ -38,7 +40,7 @@ for dfpath, cfpath in zip(dfpaths, cfpaths):
     raw = mne.io.read_raw_fif(dfpath, preload=True)
 
     if plot:
-        raw.plot(duration=15, n_channels=6, remove_dc=False, block=True)
+        raw.plot(duration=duration, n_channels=n_channels, remove_dc=False, block=True)
 
     raw.filter(1., None, n_jobs=1, fir_design='firwin')
     picks_meg = mne.pick_types(raw.info, meg=True, eeg=False, eog=False, stim=False, exclude='bads')
@@ -69,7 +71,7 @@ for dfpath, cfpath in zip(dfpaths, cfpaths):
         ica.apply(raw)
 
     if plot:
-        raw.plot(duration=15, n_channels=6, remove_dc=False, block=True)
+        raw.plot(duration=duration, n_channels=n_channels, remove_dc=False, block=True)
 
     if save:
         raw.save(cfpath, overwrite=True)

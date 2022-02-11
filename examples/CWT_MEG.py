@@ -31,15 +31,17 @@ windows_dataset = create_fixed_length_windows(dataset, start_offset_samples=1,
 # Extract time-windows
 from scipy import signal
 
-dataset = RecordingDataset(windows_dataset.datasets, sfreq=sfreq, channels='MEG')
+dataset = RecordingDataset(windows_dataset.datasets, dataset.labels, sfreq=sfreq, channels='MEG')
 print(dataset.get_info())
+
+widths = 50
 
 fig, axs = plt.subplots(2, 3)
 for widx in range(5, 8):
     npdata = dataset[0, widx][0]
-    cwtmatr = signal.cwt(npdata[0, :], signal.ricker, np.arange(1, 101))
+    cwtmatr = signal.cwt(npdata[0, :], signal.ricker, np.arange(1, widths + 1))
     axs[0, widx-5].plot(list(range(1 + 600*(widx-5), 1 + 600*(widx-4))), npdata[0, :], label='Signal')
-    axs[1, widx-5].imshow(cwtmatr, extent=[-1, 1, 1, 101], cmap='hot', aspect='auto',
+    axs[1, widx-5].imshow(cwtmatr, cmap='hot', aspect='auto',
             vmax=abs(cwtmatr).max(), vmin=-abs(cwtmatr).max(), label='Wavelet transform')
 fig.suptitle(f'Signal and Continuous Wavelet Transform scalogram, in {window_size_s}s windows')
 fig.text(.04, .2, 'Frequency [Hz]                        Amplitude [mT]', ha='center', rotation='vertical')

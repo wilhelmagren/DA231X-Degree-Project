@@ -29,14 +29,14 @@ n_jobs=1
 window_size_s = 5
 sfreq = 200
 window_size_samples = window_size_s * sfreq
-subjects = list(range(2,7))
+subjects = list(range(2,12))
 recordings = [0,1,2,3]
-tau_pos = 5
+tau_pos = 3
 tau_neg = 30
 gamma = .5
 n_samples = 256
 batch_size = 32
-n_channels = 2
+n_channels = 1
 emb_size = 100
 
 preprocessors = [Preprocessor(lambda x: x*1e12)]
