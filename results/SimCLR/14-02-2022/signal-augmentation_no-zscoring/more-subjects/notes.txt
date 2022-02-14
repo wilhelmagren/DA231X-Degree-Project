@@ -1,0 +1,18 @@
+subjects = [10, ..., 33)
+recordings = [0,1,2,3]
+batch_size = 128
+n_samples = 50
+window_size_s = 10
+n_views = 2
+n_epochs = 10
+temperature = .7
+sfreq = 200
+
+model = SignalNet(1, sfreq, input_size_s=10., n_filters=32)
+optimizer = Adam(lr=1e-3, weight_decay=1e-4)
+scheduler = CosineAnnealingLR
+
+Augmentations
+-------------
+CropResize: 10 partitions
+Permutation: 10 partitions

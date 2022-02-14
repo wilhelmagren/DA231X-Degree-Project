@@ -2,7 +2,7 @@
 SimCLR training module, implementing Info NCE Loss.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 03-02-2022
+Last edited: 14-02-2022
 """
 import torch
 import torch.nn.functional as F
@@ -68,7 +68,7 @@ class SimCLR(object):
         logits = logits / self.temperature
         return (logits, labels)
 
-    def fit(self, dataloaders):
+    def fit(self, samplers, plot=False):
         print(f'Training encoder with SimCLR on device={self.device} for {self.epochs} epochs')
         print(f'   epoch       training loss       validation loss         training acc        validation acc')
         print(f'------------------------------------------------------------------------------------------------')
@@ -77,18 +77,16 @@ class SimCLR(object):
             self.model.train()
             tloss, tacc = 0., 0.
             vloss, vacc = 0., 0.
-            for images in dataloaders['train']:
+            for images in samplers['train']:
                 anchors, samples = images
                 images = torch.cat((anchors, samples)).float().to(self.device)
                 embeddings = self.model(images)
 
-                """
-                fig, axs = plt.subplots(1, 2)
-                axs[0].imshow(torch.swapaxes(images[0, :].cpu(), 0, 2).numpy())
-                axs[1].imshow(torch.swapaxes(images[64, :].cpu(), 0, 2).numpy())
-                plt.show()
-                print(images.shape)
-                """
+                if plot:
+                    fig, axs = plt.subplots(1, 2)
+                    axs[0].imshow(torch.swapaxes(images[0, :].cpu(), 0, 2).numpy())
+                    axs[1].imshow(torch.swapaxes(images[8, :].cpu(), 0, 2).numpy())
+                    plt.show()
 
                 indices = torch.arange(0, anchors.size(0), device=anchors.device)
                 labels = torch.cat((indices, indices)).to(self.device)
@@ -102,7 +100,7 @@ class SimCLR(object):
 
             with torch.no_grad():
                 self.model.eval()
-                for images in dataloaders['valid']:
+                for images in samplers['valid']:
                     anchors, samples = images
                     images = torch.cat((anchors, samples)).float().to(self.device)
                     embeddings = self.model(images)
@@ -114,8 +112,8 @@ class SimCLR(object):
                     vloss += loss.item() / embeddings.shape[0]
 
             self.scheduler.step()
-            tloss /= len(dataloaders['train'])
-            vloss /= len(dataloaders['valid'])
+            tloss /= len(samplers['train'])
+            vloss /= len(samplers['valid'])
             history['tloss'].append(tloss)
             history['vloss'].append(vloss)
             print(f'     {epoch + 1:02d}            {tloss:.4f}              {vloss:.4f}                  {tacc:.2f}%                 {vacc:.2f}%')
