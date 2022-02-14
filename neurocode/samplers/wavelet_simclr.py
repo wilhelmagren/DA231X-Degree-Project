@@ -15,6 +15,38 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 
+class ScalogramSampler(PretextSampler):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def _parameters(self, widths=50, signal='ricker', 
+            n_views=2, shape=None, **kwargs):
+        
+        self.widths = np.arange(1, widths + 1)
+        self.signal = signal.ricker
+        self.n_views = n_views
+        self.shape = shape
+
+        self._transforms = [
+                transforms.RandomResizedCrop(shape, (.7, .95)),
+                transforms.RandomVerticalFlip(p=.999)]
+
+        self.transformer = ContrastiveViewGenerator(
+                self._transforms, n_views)
+
+    def _sample_pair(self):
+        batch_anchors = list()
+        batch_samples = list()
+        for _ in range(self.batch_size):
+            reco_idx = self._sample_recording()
+            wind_idx = self._sample_window(recording_idx=reco_idx)
+
+            x = self.data[reco_idx][wind_idx][0]
+            scalogram = signal.cwt(x, self.signal, self.widths)
+            T1, T2 = self.transforms(scalogram)
+
+
+
 class ContrastiveViewGenerator(object):
     def __init__(self, transforms, n_views):
         self.transforms = transforms
