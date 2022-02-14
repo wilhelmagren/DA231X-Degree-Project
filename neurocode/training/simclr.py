@@ -85,7 +85,7 @@ class SimCLR(object):
                 if plot:
                     fig, axs = plt.subplots(1, 2)
                     axs[0].imshow(torch.swapaxes(images[0, :].cpu(), 0, 2).numpy())
-                    axs[1].imshow(torch.swapaxes(images[anchors.shape[0], :].cpu(), 0, 2).numpy())
+                    axs[1].imshow(torch.swapaxes(images[8, :].cpu(), 0, 2).numpy())
                     plt.show()
 
                 indices = torch.arange(0, anchors.size(0), device=anchors.device)

@@ -119,7 +119,7 @@ class ScalogramSampler(PretextSampler):
         self.shape = shape
 
         self._transforms = [
-                transforms.RandomResizedCrop(shape, (.5, .9)),
+                transforms.RandomResizedCrop(shape, (.3, .8)),
                 transforms.RandomVerticalFlip(p=.999)]
 
         self.transformer = ContrastiveViewGenerator(
@@ -193,7 +193,7 @@ class ScalogramSampler(PretextSampler):
         with torch.no_grad():
             for recording in range(len(self.data)):
                 for window in range(len(self.data[recording])):
-                    if window % 20 == 0:
+                    if window % 200 == 0:
                         window = self.data[recording][window][0]
                         matrix = sig.cwt(window.squeeze(0), self.signal, self.widths)
                         matrix = resize_transform(matrix).to(device)

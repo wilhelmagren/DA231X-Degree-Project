@@ -210,10 +210,73 @@ class ShallowSimCLR(nn.Module):
 
 
 
+class SignalNet(nn.Module):
+    def __init__(self, n_channels, sfreq, n_filters=16, projection_size=100,
+            input_size_s=5., time_conv_size_s=.1, max_pool_size_s=.05,
+            pad_size_s=.1, dropout=.5, apply_batch_norm=False, return_features=False,
+            **kwargs):
+
+        super(SignalNet, self).__init__()
+        time_conv_size = np.ceil(time_conv_size_s * sfreq).astype(int)
+        max_pool_size = np.ceil(max_pool_size_s * sfreq).astype(int)
+        input_size = np.ceil(input_size_s * sfreq).astype(int)
+        pad_size = np.ceil(pad_size_s * sfreq).astype(int)
+
+        self.n_channels = n_channels
+        if n_channels > 1:
+            self.f_spatial = nn.Conv2d(1, n_channels, (n_channels, 1))
+
+        batch_norm = nn.BatchNorm2d if apply_batch_norm else nn.Identity
+
+        self.f_temporal = nn.Sequential(
+                nn.Conv2d(1, n_filters, (1, time_conv_size), padding=(0, pad_size)),
+                batch_norm(n_filters),
+                nn.ReLU(),
+                nn.MaxPool2d((1, max_pool_size)),
+
+                nn.Conv2d(n_filters, n_filters, (1, time_conv_size), padding=(0, pad_size)),
+                batch_norm(n_filters),
+                nn.ReLU(),
+                nn.MaxPool2d((1, max_pool_size))
+                )
+        
+        encoder_output = self._encoder_output_shape(n_channels, input_size)
+        self._encoder_output_size = len(encoder_output.flatten())
+        self._return_features = return_features
+
+        self.g = nn.Sequential(
+                nn.Dropout(dropout),
+                nn.Linear(self._encoder_output_size, projection_size)
+                )
+
+    def _encoder_output_shape(self, n_channels, input_size):
+        self.f_temporal.eval()
+        with torch.no_grad():
+            out = self.f_temporal(torch.Tensor(1, 1, n_channels, input_size))
+        self.f_temporal.train()
+        return out
+    
+    def forward(self, x):
+        if x.ndim == 3:
+            x.unsqueeze(1)
+
+        if self.n_channels > 1:
+            x = self.f_spatial(x)
+            x = x.transpose(1, 2)
+
+        features = self.f_temporal(x).flatten(start_dim=1)
+
+        if self._return_features:
+            return features
+        
+        return self.g(features)
+
+
+
 if __name__ == '__main__':
     if torch.cuda.is_available():
-        model = ShallowSimCLR((1, 96, 96), 200, n_filters=64).to(device)
-        summary(model, (1, 96, 96))
+        model = SignalNet(1, 200, n_filters=32, input_size_s=5).to('cuda')
+        summary(model, (1, 1, 1000))
     else:
         print('Device `CUDA` is not availalbe, can`t see summary of model...')
 
