@@ -1,0 +1,17 @@
+subjects = [0, ..., 33]
+recordings = [0,1,2,3]
+batch_size = 128
+n_samples = 100
+window_size_s = .15
+input_shape = (1, 96, 96)
+widths = 30
+n_views = 2
+n_epochs = 20
+temperature = .7
+sfreq = 200
+
+model = ShallowSimCLR(n_filters=32, dropout=.5)
+optimizer = Adam(lr=1e-3, weight_decay=1e-4)
+criterion = NTXentLoss
+scheduler = CosineAnnealingLR
+
