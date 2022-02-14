@@ -1,0 +1,18 @@
+subjects = [20, ..., 33)
+recordings = [0,1,2,3]
+batch_size = 256
+n_samples = 100
+window_size_s = 10.
+n_views = 2
+n_epochs = 20
+temperature = .7
+sfreq = 200
+
+model = Signalnet(1, sfreq, input_size_s=10,. n_filters=32)
+optimizer = Adam(lr=1e-3, weight_decay=1e-4)
+criterion = NTXentLoss
+scheduler = CosineAnnealingRL
+
+NOTES:
+fewer subjects, bust larger batch size and more samples per epoch, resulting in learning faster,
+and more separation in tSNE plots!
