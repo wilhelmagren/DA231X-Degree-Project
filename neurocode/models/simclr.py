@@ -1,8 +1,10 @@
 """
-TODO: implement shallow model for SimCLR, and add Docs!
+SimCLR torch.nn.Module(s) for ScalogramSampler. Currently, AlexNet and ResNet18
+implementations are available. ResNet18 is larger, deeper, requires more VRAM
+to properly traing with suitable batch sizes, AlexNet is easier to train.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 03-02-2022
+Last edited: 14-02-2022
 """
 import torch
 import numpy as np
@@ -12,12 +14,51 @@ import torchvision.models as models
 from torchsummary import summary
 
 class ResNet18(models.resnet.ResNet):
+    """neural network pytorch module, specifically ResNet18,
+    but modify first convolution so that 1 channel images can be
+    used, i.e. the scalograms. this model is large, thus, causes
+    potential VRAM allocation failures when training on CUDA.
+
+    Parameters
+    ----------
+    block: torch.nn.Module
+        The resdiual blocks to use in the model. See pytorch documentation
+        for detailed information.
+    layers: tuple | list
+        Collection specifying how many convolutions each layer in the model
+        should have. For ResNet18 it is something like [2,2,2,2], again see
+        documentation on pytorch.
+    num_classes: int
+        The dimensionality of the encoder f() output, i.e. the latent space
+        z. For larger ResNet this is something like 1000, but we use 200 here.
+    """
     def __init__(self, block, layers, num_classes=200):
         super(ResNet18, self).__init__(block, layers, num_classes=num_classes)
         self.conv1 = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
 
 
-class SimNet(nn.Module):
+class SimCLR(nn.Module):
+    """pytorch moduel constituting f() + g(), implementing g() but taking
+    f() as parameter. g() maps g: embedding_size -> projection_size in a 
+    mathematical sense, by implementing an MLP, be aware of overfitting...
+    
+    Parameters
+    ----------
+    encoder: torch.nn.Module
+        f() that performs the real feature extraction
+    embedding_size: int
+        The dimensionality of the latent space z.
+    projection_size: int
+        The dimensionality of the space in which to perform similarity measuremnts
+        and subsequentially applying the NTXent loss.
+    dropout: float
+        the amount of dropout to apply in the g() MLP. should most certainly 
+        be a rather large amount, as to avoid overfitting.
+    return_features: bool
+        this is a settable attribute, and defaults to False when initializing
+        the module. invert this when performing feature extraction using f().
+
+    """
     def __init__(self, encoder, embedding_size=200, projection_size=100,
             dropout=.25, return_features=False, **kwargs):
         
@@ -63,7 +104,27 @@ class ShallowSimCLR(nn.Module):
     input_shape: tuple | list
         Broadcastable struct, consisting of (channel, height, width)
     sfreq: int | float
-        The sampling frequency of the data, this is unnecessary...
+        The sampling frequency of the data, this is unnecessary if the
+        padding and stride is not dependent on the size of the input...
+    n_filters: int
+        The number of convolutional filters, channels, to apply in the 
+        first layer. This number is multiplied linearly as we go
+        deeper in the model.
+    emb_size: int
+        The wanted latent space z size, this is ignored currently.
+    projection_head: int
+        The size of resulting g() mapping, where the loss is applied.
+    dropout: float
+        The amount of dropout to apply, set to large amount when MLP
+        g() is big.
+    apply_batch_norm: bool
+        Currently, no batch normalization is applied. But this parameter
+        specifies whether or not it should be applied after convolutions.
+    return_features: bool
+        settable attribute, invert this when extracting features
+        with f(), defaults to False since expecting training 
+        to be first mode the model should be in.
+
     """
     def __init__(self, input_shape, sfreq, n_filters=16, emb_size=256,
             projection_head=100, dropout=.25, apply_batch_norm=False,
@@ -109,6 +170,30 @@ class ShallowSimCLR(nn.Module):
 
 
     def _encoder_output_shape(self, n_channels, height, width):
+        """calculate the output shape of f(), such that we can
+        connect the flattened output to the projection head g().
+        makes sure that no gradients are collected, speed++.
+
+        Parameters
+        ----------
+        n_channels: int
+            Number of channels of input image, i.e. 1 if grayscale or 
+            color values in range [0, 1), or 3 if RGB image and color
+            values in range [0, 256).
+        height: int
+            The height of the input image x.
+        width: int
+            The width of the input image x. Thus, there is no requirement
+            of symmetric image. Could be dis-proportional, i.e. more 
+            time contra frequency in the scalogram.
+
+        Returns
+        -------
+        torch.tensor
+            the output tensor of the encoder f(), such that flattened length
+            can be calculated and nn.Linear layers set accordingly.
+
+        """
         self.encoder.eval()
         with torch.no_grad():
             out = self.encoder(torch.Tensor(1, n_channels, height, width))
@@ -124,7 +209,11 @@ class ShallowSimCLR(nn.Module):
         return self.projection(features)
 
 
+
 if __name__ == '__main__':
-    model = ShallowSimCLR((1, 96, 96), 200, n_filters=32).to('cuda')
-    summary(model, (1, 96, 96))
+    if torch.cuda.is_available():
+        model = ShallowSimCLR((1, 96, 96), 200, n_filters=64).to(device)
+        summary(model, (1, 96, 96))
+    else:
+        print('Device `CUDA` is not availalbe, can`t see summary of model...')
 
