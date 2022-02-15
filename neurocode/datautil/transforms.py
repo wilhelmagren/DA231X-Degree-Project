@@ -81,7 +81,7 @@ class CropResizeTransform(BaseTransform):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def _parameters(self, n_partitions=None, pick_one=False):
+    def _parameters(self, n_partitions=None, pick_one=True):
         if not n_partitions:
             n_partitions = 5
 

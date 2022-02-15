@@ -137,11 +137,14 @@ class ScalogramSampler(PretextSampler):
         
         Returns
         -------
-        tuple(torch.tensor, torch.tensor)
-            first and second items of the tuple are the anchor and sample tensors
-            respectively. each tensor is 4D with shape (N, C, H, W) where N
-            is the batch size, C the number of color channels, H is height
-            and W is width of the image.
+        ANCHORS: torch.tensor
+            The scalograms which has had the first transform applied to them. 
+            It should hvae shape (N, C, H, W) where N is the batch size, C 
+            is the number of color channels, H is height and W is width of
+            the provided scalogram image.
+        SAMPLES: torch.tensor
+            Same as above, but scalograms which has had the second transform
+            applied to them.
 
         """
         batch_anchors = list()
@@ -163,7 +166,7 @@ class ScalogramSampler(PretextSampler):
         return (ANCHORS, SAMPLES)
 
     def extract_features(self, model, device):
-        """sample every 20th window from each recording
+        """sample every 200th window from each recording
         and extract the f() features of the window.
         make sure that the corresponding labels are 'sampled'
         pairwise to the features, such that the tSNE plots 
@@ -181,6 +184,19 @@ class ScalogramSampler(PretextSampler):
         device: str | torch.device
             the device on which to perform feature extraction,
             should be the same as that of the model.
+
+        Returns
+        -------
+        X: np.array
+            The extracted features, casted to numpy arrays and forced to 
+            move to the CPU if they were on another device. The amount
+            of features to extract is a bit arbitrary, and depends
+            on the window_size_s of the pipeline and the amount of
+            recordings provided to the sampler instance.
+        Y: np.array
+            The corresponding labels for the extracted features. Used
+            such that the tSNE plots can be labeled accordingly, and 
+            has to be the same length as X.
 
         """
         X, Y = [], []
