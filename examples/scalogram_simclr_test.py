@@ -24,13 +24,13 @@ from pytorch_metric_learning import losses
 subjects = list(range(0, 33))
 recordings = [0,1,2,3]
 batch_size = 128
-n_samples = 100
-window_size_s = .15
+n_samples = 50
+window_size_s = .5
 input_shape = (1, 96, 96)
 widths = 30
 n_views = 2
-n_epochs = 20
-temperature = .7
+n_epochs = 30
+temperature = .5
 sfreq = 200
 window_size_samples = np.ceil(sfreq * window_size_s).astype(int)
 
@@ -67,6 +67,9 @@ simclr = SimCLR(model, device, optimizer=optimizer, scheduler=scheduler,
 logging.info('Extracting pre-training features...')
 tSNE_plot(samplers['valid'].extract_features(model, device), 'pre')
 
+print(f'Training encoder with SimCLR on device={device} for {n_epochs} epochs')
+print(f'   epoch       training loss       validation loss         training acc        validation acc')
+print(f'------------------------------------------------------------------------------------------------')
 history = simclr.fit(samplers, plot=False)
 history_plot(history)
 
