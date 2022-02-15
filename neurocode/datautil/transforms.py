@@ -1,63 +1,210 @@
 """
+Data augmentation module, implementing transformations on both 
+single- and multi-channel signal data. Such as EEG, MEG, 
+audio and much more. More transformations might be implemented,
+such as Additive Gaussian Noise, Cutout&Resize. 
+See Jiang et al. 2021 for more signal transformations (EEG).
+
+This module is in alpha, work in progress, and will see 
+changes based on performance of sampling.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 14-02-2022
+Last edited: 15-02-2022
 """
 import numpy as np
 
 from scipy import signal
 
 
-def CropResize(X, n_partitions=10):
-    """
-    """
-    slice_size = X.shape[0] // n_partitions
+class BaseTransform(object):
+    """the base data augmentation object, defining the structure that all
+    implemented transforms inherit from. The transform has to be callable,
+    thus, all other transforms have to implement _parameters and transform.
 
-    if X.shape[0] % n_partitions != 0:
-        raise ValueError(
-                f'can`t properly partition X with shape {X.shape} into {n_partitions} partitions ...')
+    See the implementations inheriting from the BaseTransform object for
+    more information about actualy transforms on signal data.
+
+    Methods
+    -------
+    __call__(x):
+        Apply the transform on the input x, requiring that the transform T
+        inheriting from this object has implemented transform func.
+
+    """
+    def __init__(self, *args, **kwargs):
+        self._parameters(**kwargs)
+
+    def __call__(self, x):
+        return self.transform(x)
     
-    indices = np.arange(n_partitions) 
-    choice = np.random.choice(indices)
+    def _parameters(self, *args, **kwargs):
+        raise NotImplementedError(
+            'No parameter setup implemented for BaseTransform.')
+
+    def transform(self, x):
+        raise NotImplementedError(
+            'This BaseTransform is not callable, transform not implemented yet.')
+
+
+class CropResizeTransform(BaseTransform):
+    """data augmentation module T for the SimCLR pipeline, applying
+    the Crop&Resize transform to a given input data x, retaining 
+    the dimensionalities. Supports multi-channel data, but might
+    have slower execution times since the transform has to be 
+    applied to each channel individually (?)...
+
+    Inherits from the BaseTransform object that defines the outlining
+    functions for the transform.
+
+    Attributes
+    ----------
+    n_partitions: int | None
+        The number of partitions to create and sample from, i.e. given 
+        an input signal S(t) we create n number of windowed
+        signals {s_1, ..., s_n}. The number of partitions has to be 
+        able to divide the number of samples of the provided signal S(t).
+    pick_one: bool
+        Sets the transformation mode of the class, if true; then only one
+        partition is selected uniformly at random and then resampled to
+        the original dimensionality of S(t), if false; then we 
+        uniformly at random pick one partition to throw away, and 
+        resample all n-1 partitions to the original dimensionality.
     
-    start, end = int(choice*slice_size), int((choice+1)*slice_size)
-    resampled = signal.resample(X[start:end], X.shape[0])
+    Methods
+    -------
+    _parameters(*args, n_partitions=None, pick_one=False):
+        sets up the provided attributes of the class according to the given parameters
+    transform(x):
+        applies the implemented data augmentation transform on the given input array x.
 
-    return resampled[None]
-
-
-def Permutation(X, n_partitions=10):
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def _parameters(self, n_partitions=None, pick_one=False):
+        if not n_partitions:
+            n_partitions = 5
+
+        self.n_partitions = n_partitions
+        self.pick_one = pick_one
+
+    def transform(self, x):
+        """func expects input np.array to have dimensionality (C, T)
+        even if only one channel is used. Hopefully more channels 
+        in the SimCLR pipeline can yield better results, since there
+        are spatio-temporal relations that are prevalent, not only
+        temporal relations that would be uncovered by looking at 
+        one channel only.
+
+        Parameters
+        ----------
+        x: np.array
+            The array on which to crop&resize according to set parameters in
+            constructor. See main comments in class for information on what
+            the parameters do to the array.
+
+        Returns
+        -------
+        resampled: np.array
+            The resampled np.array, if pick_one is false then the information loss
+            is substantially decreased, since that would only leave one out.
+            Retains the input dimensionalities of x.
+
+        """
+        n_channels, n_samples = x.shape
+
+        if n_samples % self.n_partitions:
+            raise ValueError(
+                f'Can`t partition x with {n_samples=} into {self.n_partitions}'
+                ' partitions without information loss.')
+        
+        size = n_samples // self.n_partitions
+        indices = np.arange(self.n_partitions)
+        if self.pick_one:
+            # pick one partition uniformly at random to resample to original size
+            # and return these channels. the alternative is to pick one and leave it
+            # out, instead of using it. this choice remains for ALL channels in x.
+            choice = np.random.choice(indices)
+            start, end = [np.ceil((choice + i) * size).astype(int) for i in [0,1]]
+            resampled = np.zeros(x.shape).astype(x.dtype)
+
+            for channel in range(n_channels):
+                resampled[channel, :] = signal.resample(x[channel, start:end], n_samples)
+            
+            return resampled
+        
+        else:
+            raise NotImplementedError(
+                'Leave one out has not been implemented yet, not used in literature either.')
+
+        return None
+
+
+class PermutationTransform(BaseTransform):
+    """data augmentation module T for the SimCLR pipeline, applying the
+    Permutation transformation on the provided input data array x,
+    retaining its dimensionalities and NOT applying it inplace. 
+
+    Inherits from the BaseTransform object that defines the outlining
+    functions for the transform.
+
+    Attributes
+    ----------
+    n_partitions: int | None
+        The number of partitions to create and shuffle. See above CropResizeTransform
+        for more information on how to partitioning is performed.
+
+    Methods
+    -------
+    _parameters(*args, n_partitions=None):
+        sets up the provided attributes of the class according to the given parameters
+    transform(x):
+        applies the implemented data augmentation transform on the given input array x.
+
     """
-    slice_size = X.shape[0] // n_partitions
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    if X.shape[0] % n_partitions != 0:
-        raise ValueError(
-                f'can`t properly partition X with shape {X.shape} into {n_partitions} partitions ...')
-
-    indices = np.random.permutation(n_partitions)
-    samples = [(int(i*slice_size), int((i+1)*slice_size)) for i in indices]
-    permutated = np.zeros(X.shape).astype(X.dtype)
-
-    for idx, (start, end) in enumerate(samples):
-        nstart, nend = int(idx*slice_size), int((idx+1)*slice_size)
-        permutated[nstart:nend] = X[start:end]
-
-    return permutated[None]
-
-
-
-if __name__ == '__main__':
-    x = np.linspace(0, 20, 200)
-    y = np.cos(-x**2/10.)
-
-    cropresized = CropResize(y, n_partitions=5)
-    permutated = Permutation(y, n_partitions=5)
+    def _parameters(self, n_partitions=None):
+        if not n_partitions:
+            n_partitions = 10
+        
+        self.n_partitions = n_partitions
     
-    import matplotlib.pyplot as plt
-    fig, axs = plt.subplots(1, 3)
-    axs[0].plot(y)
-    axs[1].plot(cropresized)
-    axs[2].plot(permutated)
-    plt.show()
-       
+    def transform(self, x):
+        """func applies the Transform to the input x, preserving the dimensionalities
+        but expects it to be of shape (n_channels, n_samples)
+
+        Parameters
+        ----------
+        x: np.array
+            The broadcastable array on which to apply transformation. Does not do this inplace, 
+            i.e. the class creates a new numpy array and returns it.
+        
+        Returns
+        -------
+        permuted: np.array
+            The permuted np.array, partitioned into n_partitions and uniformly at random
+            shuffled to generate 'new' data.
+        """
+        n_channels, n_samples = x.shape
+
+        if n_samples % self.n_partitions:
+            raise ValuError(
+                f'Can`t partition x with {n_samples=} into {self.n_partitions}'
+                ' partitions without information loss.')
+        
+        size = n_samples // self.n_partitions
+        indices = np.random.permutation(self.n_partitions)
+
+        # get the partitioning indices based on the input size and permuted base indices
+        samples = [(np.ceil(i * size).astype(int), np.ceil((i + 1) * size).astype(int)) for i in indices]
+        permuted = np.zeros(x.shape).astype(x.dtype)
+
+        # apply the permutation on all channels of x, according to above shuffling
+        for channel in range(n_channels):
+            for idx, (start, end) in enumerate(samples):
+                nstart, nend = [np.ceil((idx + i) * size).astype(int) for i in [0,1]]
+                permuted[channel, nstart:nend] = x[channel, start:end]
+        
+        return permuted

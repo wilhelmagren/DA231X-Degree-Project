@@ -40,7 +40,7 @@ class ContrastiveViewGenerator(object):
     the transforms attribute of the object
     if you want more views.
 
-    Parameters
+    Attributes
     ----------
     T: tuple | list
         A collection holding the torchvision.transforms, length of T
@@ -80,7 +80,7 @@ class ScalogramSampler(PretextSampler):
     the model with two images that are contrastive
     in nature.
 
-    Parameters
+    Attributes
     ----------
     widths: int
         Specifies the upper bound for number of scales

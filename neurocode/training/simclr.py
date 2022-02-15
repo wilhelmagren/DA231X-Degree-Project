@@ -1,6 +1,7 @@
 """
 SimCLR training module, implementing Info NCE Loss and model.fit() for 
-training encoder f(), 
+training encoder f(). Might utilize the NTXentLoss from the 
+pytorch-metric-learning module instead depending on implementation.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
 Last edited: 15-02-2022
@@ -12,14 +13,15 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 from collections import defaultdict
 
-torch.manual_seed(0)
-
 
 class SimCLR(object):
     """Simple framework for Contrastive Learning on visual Representations (SimCLR)
-    object, implementing Info NCE Loss and training+validation procedure. 
+    object, implementing Info NCE Loss and training+validation procedure.
+    Currently doesn't utilize the implemented Info NCE Loss, but favours the 
+    NTXentLoss implemented in pytorch-metric-learning. See its documentation
+    for more information on implementation.
 
-    Parameters
+    Attributes
     ----------
     model: torch.nn.Module
         The initialized neural network to train, usually encoder f() for SimCLR.
@@ -43,6 +45,18 @@ class SimCLR(object):
         See literature for more information about its characteristics.
     n_views: int | None
         The number of aguemnted views to produce given a datapoint x.
+    
+    Methods
+    -------
+    info_nce_loss(features):
+        Calculates the similarity measures of the input features, torch.tensor, 
+        and returns the logits and labels associated with them. Loss is implemented
+        based on the Oord et al. 2016 Contrastive Predictive Coding paper.
+    fit(samplers, plot=False):
+        Traing the provided encoder f() on the given sampler datasets. The attributes
+        decide majority of parameters during training. Plot enables visualizing the
+        positive sample data transformations.
+
     """
     def __init__(self, model, device, optimizer=None, criterion=None, scheduler=None,
             batch_size=256, epochs=100, temperature=.7, n_views=2, **kwargs):
@@ -130,7 +144,7 @@ class SimCLR(object):
             are lists of loss. Should be passed to history_plot function from datautil.visualization
 
         """
-        history =  defaultdict(list)
+        history = defaultdict(list)
         for epoch in range(self.epochs):
             self.model.train()
             tloss, tacc = 0., 0.
