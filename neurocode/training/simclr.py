@@ -124,7 +124,7 @@ class SimCLR(object):
         logits = logits / self.temperature
         return (logits, labels)
 
-    def fit(self, samplers, plot=False):
+    def fit(self, samplers, plot=False, save_model=False):
         """fit the SimCLR model to the provided samplers, conditionally plot the positive pair
         augmentations when running for validity, or just for interest. Majority of 
         parameters for training are set up a priori, i.e. in optimizer, scheduler, which can
@@ -192,6 +192,10 @@ class SimCLR(object):
             history['tloss'].append(tloss)
             history['vloss'].append(vloss)
             print(f'     {epoch + 1:02d}            {tloss:.4f}              {vloss:.4f}                  {tacc:.2f}%                 {vacc:.2f}%')
+
+        if save_model:
+            print(f'Done trainig, saving model parameters to net.pth')
+            torch.save(self.model, 'params.pth')
 
         return history
 

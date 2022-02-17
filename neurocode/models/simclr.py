@@ -131,8 +131,7 @@ class ShallowSimCLR(nn.Module):
             return_features=False, **kwargs):
 
         super(ShallowSimCLR, self).__init__()
-        n_channels, height, width = input_shape
-        self.n_channels = n_channels
+        height, width = input_shape
         self.height = height
         self.width = width
         self.sfreq = sfreq
@@ -142,7 +141,7 @@ class ShallowSimCLR(nn.Module):
         batch_norm = nn.BatchNorm2d if apply_batch_norm else nn.Identity
 
         self.encoder = nn.Sequential(
-                nn.Conv2d(n_channels, n_filters, (11, 11), stride=(4, 4)),
+                nn.Conv2d(1, n_filters, (11, 11), stride=(3, 3)),
                 nn.ReLU(),
                 nn.MaxPool2d((3, 3), stride=(2, 2)),
 
@@ -158,10 +157,13 @@ class ShallowSimCLR(nn.Module):
                 nn.MaxPool2d((3, 3), stride=(2, 2))
                 )
         
-        encoder_shape = self._encoder_output_shape(n_channels, height, width)
+        encoder_shape = self._encoder_output_shape(height, width)
         self.real_emb_size = len(encoder_shape.flatten())
 
         self.projection = nn.Sequential(
+                nn.Linear(self.real_emb_size, self.real_emb_size),
+                nn.Dropout(dropout),
+                nn.ReLU(),
                 nn.Linear(self.real_emb_size, self.real_emb_size),
                 nn.Dropout(dropout),
                 nn.ReLU(),
@@ -169,17 +171,13 @@ class ShallowSimCLR(nn.Module):
                 )
 
 
-    def _encoder_output_shape(self, n_channels, height, width):
+    def _encoder_output_shape(self, height, width):
         """calculate the output shape of f(), such that we can
         connect the flattened output to the projection head g().
         makes sure that no gradients are collected, speed++.
 
         Parameters
         ----------
-        n_channels: int
-            Number of channels of input image, i.e. 1 if grayscale or 
-            color values in range [0, 1), or 3 if RGB image and color
-            values in range [0, 256).
         height: int
             The height of the input image x.
         width: int
@@ -196,7 +194,7 @@ class ShallowSimCLR(nn.Module):
         """
         self.encoder.eval()
         with torch.no_grad():
-            out = self.encoder(torch.Tensor(1, n_channels, height, width))
+            out = self.encoder(torch.Tensor(1, 1, height, width))
         self.encoder.train()
         return out
 
@@ -213,7 +211,7 @@ class ShallowSimCLR(nn.Module):
 class SignalNet(nn.Module):
     def __init__(self, n_channels, sfreq, n_filters=16, projection_size=100,
             input_size_s=5., time_conv_size_s=.1, max_pool_size_s=.05,
-            pad_size_s=.1, dropout=.5, apply_batch_norm=False, return_features=False,
+            pad_size_s=.05, dropout=.5, apply_batch_norm=False, return_features=False,
             **kwargs):
 
         super(SignalNet, self).__init__()
@@ -234,8 +232,8 @@ class SignalNet(nn.Module):
                 nn.ReLU(),
                 nn.MaxPool2d((1, max_pool_size)),
 
-                nn.Conv2d(n_filters, n_filters, (1, time_conv_size), padding=(0, pad_size)),
-                batch_norm(n_filters),
+                nn.Conv2d(n_filters, n_filters*2, (1, time_conv_size), padding=(0, pad_size)),
+                batch_norm(n_filters*2),
                 nn.ReLU(),
                 nn.MaxPool2d((1, max_pool_size))
                 )
@@ -245,6 +243,9 @@ class SignalNet(nn.Module):
         self._return_features = return_features
 
         self.g = nn.Sequential(
+                nn.Dropout(dropout),
+                nn.Linear(self._encoder_output_size, self._encoder_output_size),
+                nn.ReLU(),
                 nn.Dropout(dropout),
                 nn.Linear(self._encoder_output_size, projection_size)
                 )
@@ -275,8 +276,9 @@ class SignalNet(nn.Module):
 
 if __name__ == '__main__':
     if torch.cuda.is_available():
-        model = SignalNet(1, 200, n_filters=32, input_size_s=5).to('cuda')
-        summary(model, (1, 1, 1000))
+        # model = SignalNet(1, 200, n_filters=32, input_size_s=5).to('cuda')
+        model = ShallowSimCLR((64, 128), 200, n_filters=32, dropout=.5).to('cuda')
+        summary(model, (1, 64, 128))
     else:
-        print('Device `CUDA` is not availalbe, can`t see summary of model...')
+        print('Device `CUDA` is not available, can`t see summary of model...')
 

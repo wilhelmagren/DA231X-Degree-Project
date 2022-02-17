@@ -28,6 +28,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 
+from PIL import Image
 from scipy import signal as sig
 from torchvision import transforms
 from .base import PretextSampler
@@ -54,15 +55,7 @@ class ContrastiveViewGenerator(object):
 
     """
     def __init__(self, T, n_views, shape):
-        self.transforms = [
-                transforms.Compose([
-                    transforms.ToTensor(),
-                    transforms.Resize(shape),
-                    T[0]]),
-                transforms.Compose([
-                    transforms.ToTensor(),
-                    transforms.Resize(shape),
-                    T[1]])]
+        self.transforms = T
 
         self.n_views = n_views
 
@@ -119,8 +112,14 @@ class ScalogramSampler(PretextSampler):
         self.shape = shape
 
         self._transforms = [
-                transforms.RandomResizedCrop(shape, (.3, .8)),
-                transforms.RandomVerticalFlip(p=.999)]
+            transforms.Compose([
+                transforms.RandomResizedCrop(size=shape, scale=(.5, .8)),
+                transforms.ToTensor()]),
+            transforms.Compose([
+                transforms.RandomPosterize(bits=3, p=.9999),
+                transforms.Resize(size=shape),
+                transforms.ToTensor()])]
+                
 
         self.transformer = ContrastiveViewGenerator(
                 self._transforms, n_views, shape)
@@ -155,7 +154,21 @@ class ScalogramSampler(PretextSampler):
 
             x = self.data[reco_idx][wind_idx][0]
             scalogram = sig.cwt(x.squeeze(0), self.signal, self.widths)
-            T1, T2 = self.transformer(scalogram)
+            scalogram = scalogram[:(self.widths[-1] // 2), :]
+            scalogram = ((scalogram - scalogram.min()) * (1/(scalogram.max() - scalogram.min()) * 255)).astype('uint8')
+            image = Image.fromarray(scalogram)
+            T1, T2 = self.transformer(image)
+
+            """
+            fig, axs = plt.subplots(1, 4)
+            axs[0].plot(x.squeeze(0))
+            axs[1].imshow(scalogram, extent=[-1, 1, 1, self.widths[-1]], aspect='auto')
+            arr1 = torch.swapaxes(torch.swapaxes(T1, 0, 2), 0, 1).numpy().squeeze(2)
+            axs[2].imshow(arr1, extent=[-1, 1, 1, self.widths[-1]], aspect='auto')
+            arr2 = torch.swapaxes(torch.swapaxes(T2, 0, 2), 0, 1).numpy().squeeze(2)
+            axs[3].imshow(arr2, extent=[-1, 1, 1, self.widths[-1]], aspect='auto')
+            plt.show()
+            """
 
             batch_anchors.append(T1.unsqueeze(0))
             batch_samples.append(T2.unsqueeze(0))

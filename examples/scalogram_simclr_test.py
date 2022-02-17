@@ -20,17 +20,19 @@ from braindecode.datautil.windowers import create_fixed_length_windows
 from braindecode.datautil.preprocess import preprocess, Preprocessor, zscore
 from pytorch_metric_learning import losses
 
+torch.manual_seed(73)
+np.random.seed(73)
 
 subjects = list(range(0, 33))
 recordings = [0,1,2,3]
-batch_size = 128
-n_samples = 50
+batch_size = 64
+n_samples = 10
 window_size_s = .5
-input_shape = (1, 96, 96)
-widths = 30
+shape = (64, 128)
+widths = 50
 n_views = 2
-n_epochs = 30
-temperature = .5
+n_epochs = 50
+temperature = .7
 sfreq = 200
 window_size_samples = np.ceil(sfreq * window_size_s).astype(int)
 
@@ -47,14 +49,14 @@ dataset = RecordingDataset(windows_dataset.datasets, dataset.labels, sfreq=sfreq
 train_dataset, valid_dataset = dataset.split(split=.7)
 
 samplers = {'train': ScalogramSampler(train_dataset.get_data(), train_dataset.get_labels(),
-    train_dataset.get_info(), n_views=n_views, widths=widths, shape=(96, 96), n_samples=n_samples,
+    train_dataset.get_info(), n_views=n_views, widths=widths, shape=shape, n_samples=n_samples,
     batch_size=batch_size),
            'valid': ScalogramSampler(valid_dataset.get_data(), valid_dataset.get_labels(),
-    valid_dataset.get_info(), n_views=n_views, widths=widths, shape=(96, 96), n_samples=n_samples,
+    valid_dataset.get_info(), n_views=n_views, widths=widths, shape=shape, n_samples=n_samples,
     batch_size=batch_size)}
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-model = ShallowSimCLR(input_shape, sfreq, n_filters=32, dropout=.5).to(device)
+model = ShallowSimCLR(shape, sfreq, n_filters=32, dropout=.5).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(samplers['train']),
         eta_min=0, last_epoch=-1)

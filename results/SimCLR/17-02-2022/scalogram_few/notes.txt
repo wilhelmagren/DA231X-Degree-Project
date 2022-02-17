@@ -1,0 +1,18 @@
+subjects = [20, ..., 33)
+recordings = ALL
+batch_size = 64
+n_samples = 10
+window_size_s = .5
+shape = (64, 128)
+widths = 50
+n_views = 2
+n_epochs = 30
+temperature = .7
+sfreq = 200
+
+augmentations: RandomResizeCrop(scal=(.3, .8)), and RandomPosterize(bits=3)
+model = ShallowSimCLR(n_filters=32, dropout=.5)
+
+
+some clustering in tSNE post-training plots; just not on the subject labels.
+

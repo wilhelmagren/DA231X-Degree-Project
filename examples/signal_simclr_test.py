@@ -28,8 +28,8 @@ n_samples = 100
 window_size_s = 5.
 n_views = 2
 n_channels = 3
-n_epochs = 20
-temperature = .5
+n_epochs = 5
+temperature = .1
 sfreq = 200
 window_size_samples = np.ceil(sfreq * window_size_s).astype(int)
 
@@ -51,8 +51,8 @@ samplers = {'train': SignalSampler(train_dataset.get_data(), train_dataset.get_l
     valid_dataset.get_info(), n_channels=n_channels, n_views=n_views, n_samples=n_samples, batch_size=batch_size)}
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-model = SignalNet(n_channels, sfreq, input_size_s=window_size_s, n_filters=32).to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=5e-3, weight_decay=1e-4)
+model = SignalNet(n_channels, sfreq, input_size_s=window_size_s, n_filters=32, apply_batch_norm=True).to(device)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(samplers['train']),
         eta_min=0, last_epoch=-1)
 criterion = losses.NTXentLoss(temperature=temperature)
@@ -67,7 +67,7 @@ tSNE_plot(samplers['valid'].extract_features(model, device), 'pre')
 print(f'Training encoder with SimCLR on device={device} for {n_epochs} epochs')
 print(f'   epoch       training loss       validation loss         training acc        validation acc')
 print(f'------------------------------------------------------------------------------------------------')
-history = simclr.fit(samplers, plot=False)
+history = simclr.fit(samplers, plot=False, save_model=True)
 history_plot(history)
 
 logging.info('Extracting post-training features...')
