@@ -12,12 +12,12 @@ import torch
 import numpy as np
 
 from torch import nn
-
+from torchsummary import summary
 
 class StagerNet(nn.Module):
     def __init__(self, n_channels, sfreq, n_conv_chs=16, emb_size=100,
-                input_size_s=30., time_conv_size_s=.5, max_pool_size_s=.125,
-                pad_size_s=.25, dropout=.5, apply_batch_norm=False,
+                input_size_s=5., time_conv_size_s=.1, max_pool_size_s=.05,
+                pad_size_s=.05, dropout=.5, apply_batch_norm=False,
                 return_feats=False, **kwargs):
         super(StagerNet, self).__init__()
         time_conv_size = np.ceil(time_conv_size_s * sfreq).astype(int)
@@ -37,8 +37,8 @@ class StagerNet(nn.Module):
                 batch_norm(n_conv_chs),
                 nn.ReLU(),
                 nn.MaxPool2d((1, max_pool_size)),
-                nn.Conv2d(n_conv_chs, n_conv_chs, (1, time_conv_size), padding=(0, pad_size)),
-                batch_norm(n_conv_chs),
+                nn.Conv2d(n_conv_chs, n_conv_chs*2, (1, time_conv_size), padding=(0, pad_size)),
+                batch_norm(n_conv_chs*2),
                 nn.ReLU(),
                 nn.MaxPool2d((1, max_pool_size))
                 )
@@ -73,3 +73,10 @@ class StagerNet(nn.Module):
         else:
             return self.fc(feats)
 
+if __name__ == '__main__':
+    if torch.cuda.is_available():
+        # model = SignalNet(1, 200, n_filters=32, input_size_s=5).to('cuda')
+        model = StagerNet(3, 200, n_filters=32, dropout=.5, emb_size=100, input_size_s=5.).to('cuda')
+        summary(model, (1, 3, 1000))
+    else:
+        print('Device `CUDA` is not available, can`t see summary of model...')

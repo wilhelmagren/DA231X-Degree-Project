@@ -11,12 +11,14 @@ import torch
 from torch import nn
 
 
-class ContrastiveNet(nn.Module):
+class ContrastiveRPNet(nn.Module):
     def __init__(self, emb, emb_size, dropout=.5):
-        super(ContrastiveNet, self).__init__()
+        super(ContrastiveRPNet, self).__init__()
         self.emb = emb
         self.clf = nn.Sequential(
+                nn.Linear(emb_size, emb_size),
                 nn.Dropout(dropout),
+                nn.ReLU(),
                 nn.Linear(emb_size, 1)
                 )
 
@@ -25,3 +27,19 @@ class ContrastiveNet(nn.Module):
         z1, z2 = self.emb(x1), self.emb(x2)
         return self.clf(torch.abs(z1-z2))
 
+
+class ContrastiveTSNet(nn.Module):
+    def __init__(self, emb, emb_size, dropout=.5):
+        super(ContrastiveTSNet, self).__init__()
+        self.emb = emb
+        self.clf = nn.Sequential(
+            nn.Linear(2*emb_size, emb_size),
+            nn.Dropout(dropout),
+            nn.ReLU(),
+            nn.Linear(emb_size, 1)
+        )
+    
+    def forward(self, x):
+        z1, z2, z3 = [self.emb(t) for t in x]
+        return self.clf(torch.cat((torch.abs(z1 - z2), torch.abs(z2 - z3)), dim=1))
+    

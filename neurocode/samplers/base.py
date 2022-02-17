@@ -39,14 +39,17 @@ class PretextSampler(Sampler):
     def _extract_embeddings(self, emb, device, n_samples_per_recording=None):
         X, Y = [], []
         emb.eval()
+        emb.return_feats = True
         with torch.no_grad():
             for reco_idx in range(len(self.data)):
-                for window in self.data[reco_idx]:
-                    window = torch.Tensor(window[0][None]).to(device)
-                    embedding = emb(window)
-                    X.append(embedding[0, :][None])
-                    Y.append(self.labels[reco_idx])
+                for idx, window in enumerate(self.data[reco_idx]):
+                    if idx % 10 == 0:
+                        window = torch.Tensor(window[0][None]).to(device)
+                        embedding = emb(window)
+                        X.append(embedding[0, :][None])
+                        Y.append(self.labels[reco_idx])
         X = np.concatenate([x.cpu().detach().numpy() for x in X], axis=0)
+        emb.return_feats = False
         return (X, Y)
         
 

@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from neurocode.utils import BCEWithLogitsAccuracy
 from neurocode.datasets import RecordingDataset, SLEMEG
 from neurocode.samplers import RRPSampler
-from neurocode.models import ContrastiveNet, StagerNet
+from neurocode.models import ContrastiveRPNet, StagerNet
 from neurocode.datautil import tSNE_plot, history_plot
 from braindecode.datautil.preprocess import preprocess, Preprocessor, zscore
 from braindecode.datautil.windowers import create_fixed_length_windows
@@ -29,14 +29,14 @@ n_jobs=1
 window_size_s = 5
 sfreq = 200
 window_size_samples = window_size_s * sfreq
-subjects = list(range(2,12))
+subjects = list(range(0, 33))
 recordings = [0,1,2,3]
 tau_pos = 3
 tau_neg = 30
 gamma = .5
-n_samples = 256
-batch_size = 32
-n_channels = 1
+n_samples = 50
+batch_size = 64
+n_channels = 3
 emb_size = 100
 
 preprocessors = [Preprocessor(lambda x: x*1e12)]
@@ -68,9 +68,9 @@ samplers = {'train': RRPSampler(train_dataset.get_data(), train_dataset.get_labe
 
 # Setup pytorch training, move models etc.
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-emb = StagerNet(n_channels, sfreq, n_conv_chs=8, dropout=.25, input_size_s=5.).to(device)
-model = ContrastiveNet(emb, emb_size, dropout=.25).to(device)
-optimizer = torch.optim.Adam(model.parameters(), lr=5e-4, weight_decay=1e-6)
+emb = StagerNet(n_channels, sfreq, n_conv_chs=32, dropout=.5, input_size_s=5.).to(device)
+model = ContrastiveRPNet(emb, emb_size, dropout=.5).to(device)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
 criterion = torch.nn.BCEWithLogitsLoss()
 
 
@@ -78,7 +78,7 @@ print(f'extracting embeddings before training...')
 embeddings = {'pre': samplers['valid']._extract_embeddings(emb, device)}
 tSNE_plot(embeddings['pre'], 'before')
 
-epochs = 5
+epochs = 20
 history = {'tloss': [], 'vloss': [], 'tacc': [], 'vacc': []}
 print(f'starting model training for {epochs} epochs on device={device}')
 print(f'  epoch    training loss   validation loss   training acc   validation acc')
