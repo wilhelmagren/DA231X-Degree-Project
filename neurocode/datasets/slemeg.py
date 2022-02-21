@@ -36,12 +36,12 @@ class SLEMEG(BaseConcatDataset):
         fpaths = fetch_meg_data(subjects, recordings, cleaned)
         all_base_ds = list()
         self.labels = list()
-        for subj_id, reco_id, gender, age, path in fpaths:
+        for subj_id, reco_id, gender, age, RTrecipControl, RTrecipSleep, RTControl, RTSleep, RTdiff, path in fpaths:
             raw, desc = load_raw_fif(
                     path, subj_id, reco_id, preload, drop_channels=load_meg_only)
             base_ds = BaseDataset(raw, desc)
             all_base_ds.append(base_ds)
-            self.labels.append((subj_id, reco_id, gender, age))
+            self.labels.append((subj_id, reco_id, gender, age, RTrecipControl, RTrecipSleep, RTControl, RTSleep, RTdiff))
 
         return all_base_ds
 

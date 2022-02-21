@@ -62,7 +62,7 @@ class SimCLR(nn.Module):
     def __init__(self, encoder, embedding_size=200, projection_size=100,
             dropout=.25, return_features=False, **kwargs):
         
-        super(SimNet, self).__init__()
+        super(SimCLR, self).__init__()
         self._return_features = return_features
         self._projection_size = projection_size
         self._dropout = dropout

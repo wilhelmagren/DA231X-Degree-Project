@@ -15,7 +15,7 @@ CWD = os.getcwd()
 RELATIVE_LABEL_PATH = os.path.join(CWD, 'data/subjects.tsv')
 RELATIVE_MEG_PATH = os.path.join(CWD, 'data/data-ds-200Hz/')
 RELATIVE_CLEANED_MEG_PATH = os.path.join(CWD, 'data/data-cleaned/')
-DEFAULT_MEG_CHANNELS = ['MEG2341', 'MEG2342', 'MEG2343']  # ['MEG2032', 'MEG2033']
+DEFAULT_MEG_CHANNELS = ['MEG2341']  # ['MEG2032', 'MEG2033']
 RECORDING_ID_MAP = {
         0: 'ses-con_task-rest_ec',
         1: 'ses-con_task-rest_eo',
@@ -83,7 +83,7 @@ def get_subject_gender(f):
     id = get_subject_id(f)
     with open(RELATIVE_LABEL_PATH, 'r') as f:
         for line in f.readlines():
-            if id in line:
+            if ('sub-'+id) in line:
                 return 0. if line.split('\t')[2] == 'F' else 1.
     raise ValueError
 
@@ -91,8 +91,34 @@ def get_subject_age(f):
     id = get_subject_id(f)
     with open(RELATIVE_LABEL_PATH, 'r') as f:
         for line in f.readlines():
-            if id in line:
+            if ('sub-'+id) in line:
                 return float(line.split('\t')[1])
+    raise ValueError
+
+def get_subject_RTrecip(f):
+    id = get_subject_id(f)
+    with open(RELATIVE_LABEL_PATH, 'r') as f:
+        for line in f.readlines():
+            if ('sub-'+id) in line:
+                a, b = line.split('\t')[5:7]
+                return float(a), float(b)
+    raise ValueError
+
+def get_subject_RTdiff(f):
+    id = get_subject_id(f)
+    with open(RELATIVE_LABEL_PATH, 'r') as f:
+        for line in f.readlines():
+            if ('sub-'+id) in line:
+                return float(line.split('\t')[9])
+    raise ValueError
+
+def get_subject_RT(f):
+    id = get_subject_id(f)
+    with open(RELATIVE_LABEL_PATH, 'r') as f:
+        for line in f.readlines():
+            if ('sub-'+id) in line:
+                a, b = line.split('\t')[7:9]
+                return float(a), float(b)
     raise ValueError
 
 def fetch_meg_data(subjects, recordings, cleaned):
@@ -104,6 +130,7 @@ def fetch_meg_data(subjects, recordings, cleaned):
         for recording in recordings:
             if RECORDING_ID_MAP[recording] in f:
                 included_files.append(f)
-    return list((get_subject_id(f), get_recording_id(f), get_subject_gender(f), get_subject_age(f), f) for f in included_files)
+    return list((get_subject_id(f), get_recording_id(f), get_subject_gender(f), 
+    get_subject_age(f), *get_subject_RTrecip(f), *get_subject_RT(f), get_subject_RTdiff(f), f) for f in included_files)
 
 
