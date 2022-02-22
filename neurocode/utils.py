@@ -121,16 +121,23 @@ def get_subject_RT(f):
                 return float(a), float(b)
     raise ValueError
 
+def get_subject_RT(f):
+    id = get_subject_id(f)
+    with open(RELATIVE_LABEL_PATH, 'r') as f:
+        for line in f.readlines():
+            if ('sub-'+id) in line:
+                return [float(item) for item in line.split('\t')[5:10]]
+
 def fetch_meg_data(subjects, recordings, cleaned):
     megpath = RELATIVE_CLEANED_MEG_PATH if cleaned else RELATIVE_MEG_PATH
-    included_files = list()
+    included_files = []
     subject_ids = pad_and_stringify(subjects, 2)
-    files = list(os.path.join(megpath, f) for f in list(os.listdir(megpath)) if get_subject_id(f) in subject_ids)
+    files = [os.path.join(megpath, f) for f in list(os.listdir(megpath)) if get_subject_id(f) in subject_ids]
     for f in files:
         for recording in recordings:
             if RECORDING_ID_MAP[recording] in f:
                 included_files.append(f)
-    return list((get_subject_id(f), get_recording_id(f), get_subject_gender(f), 
-    get_subject_age(f), *get_subject_RTrecip(f), *get_subject_RT(f), get_subject_RTdiff(f), f) for f in included_files)
+    return [(get_subject_id(f), get_recording_id(f), get_subject_gender(f), 
+    get_subject_age(f), *get_subject_RT(f), f) for f in included_files]
 
 

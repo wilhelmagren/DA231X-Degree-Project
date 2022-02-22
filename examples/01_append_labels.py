@@ -11,50 +11,38 @@ import os
 import numpy as np
 import pandas as pd
 
-cwd = os.getcwd()
-LABELS_ = os.path.join(cwd, 'data/subjects_backup.tsv')
-RT_LABELS_ = os.path.join(cwd, 'data/pvt_ind_data.tsv')
 
-dframe = pd.read_csv(RT_LABELS_, sep='\t')
+__root__ = os.getcwd()
+rtpath = __root__ + '/data/pvt_ind_data.tsv'
+labels = __root__ + '/data/subjects_backup.tsv'
+
+dframe = pd.read_csv(rtpath, sep='\t')
 RTrecip = dframe['RTrecip']
-
-# 64 - 10 = 54
-tmp = []
-for i, x in enumerate(RTrecip):
-    if i == 54:
-        tmp.append(1.0)
-        tmp.append(1.0)
-    
-    tmp.append(x)
-
-RTrecip = np.array(tmp).reshape((1, 66))
 
 RT = 1 / RTrecip
 RTdiffs = []
 RTrecips = []
 RTs = []
-for idx in range(0, RTrecip.shape[1], 2):
-    control = RTrecip[0, idx]
-    psd = RTrecip[0, idx+1]
+for idx in range(0, RTrecip.shape[0], 2):
+    control = RTrecip[idx]
+    psd = RTrecip[idx+1]
+    lol = RT[idx]
+    xd = RT[idx+1]
+    if any(np.isnan([control, psd, lol, xd])):
+        control = psd = lol = xd = 0.0
     RTdiffs.append(psd - control)
     RTrecips.append((control, psd))
-    lol = RT[0, idx]
-    xd = RT[0, idx+1]
     RTs.append((lol, xd))
 
-print(RTdiffs)
-print(RTrecips)
-print(RTs)
 
 BUFFER = []
-with open(LABELS_, 'r') as f:
+with open(labels, 'r') as f:
     for idx, line in enumerate(f.readlines()):
         if idx == 0:
             s = line.rstrip()
             s += '\tRTrecipControl\tRTrecipSleep\tRTControl\tRTSleep\tRTdiff'
             BUFFER.append(s)
         else:
-            print(idx, len(RTrecips), line)
             control, psd = RTrecips[idx - 1]
             s = line.rstrip()
             s += f'\t{control}\t{psd}'

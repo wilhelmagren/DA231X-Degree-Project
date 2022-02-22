@@ -23,7 +23,7 @@ from pytorch_metric_learning import losses
 torch.manual_seed(73)
 np.random.seed(73)
 
-subjects = list(range(0, 33))
+subjects = list(range(31, 33))
 recordings = [0,1,2,3]
 batch_size = 128
 n_samples = 10
@@ -39,6 +39,7 @@ window_size_samples = np.ceil(sfreq * window_size_s).astype(int)
 preprocessors = [Preprocessor(lambda x: x*1e12)]
 dataset = SLEMEG(subjects=subjects, recordings=recordings, preload=True,
         load_meg_only=True, preprocessors=preprocessors, cleaned=True)
+
 
 windows_dataset = create_fixed_length_windows(dataset, start_offset_samples=0,
         stop_offset_samples=0, drop_last_window=True, window_size_samples=window_size_samples,
