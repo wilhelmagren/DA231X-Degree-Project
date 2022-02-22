@@ -2,20 +2,270 @@
 utility functions et al.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 29-11-2021
+Last edited: 22-02-2022
 """
 import mne
 import os
 import torch
 import pandas as pd
 
-from enum import Enum
+__rightfrontal__ = [
+    'MEG0811',
+    'MEG0812',
+    'MEG0813',
+    'MEG0911',
+    'MEG0912',
+    'MEG0913',
+    'MEG0921',
+    'MEG0922',
+    'MEG0923',
+    'MEG0931',
+    'MEG0932',
+    'MEG0933',
+    'MEG0941',
+    'MEG0942',
+    'MEG0943',
+    'MEG1011',
+    'MEG1012',
+    'MEG1013',
+    'MEG1021',
+    'MEG1022',
+    'MEG1023',
+    'MEG1031',
+    'MEG1032',
+    'MEG1033',
+    'MEG1211',
+    'MEG1212',
+    'MEG1213',
+    'MEG1221',
+    'MEG1222',
+    'MEG1223',
+    'MEG1231',
+    'MEG1232',
+    'MEG1233',
+    'MEG1241',
+    'MEG1242',
+    'MEG1243',
+    'MEG1411',
+    'MEG1412',
+    'MEG1413'
+]
 
-CWD = os.getcwd()
-RELATIVE_LABEL_PATH = os.path.join(CWD, 'data/subjects.tsv')
-RELATIVE_MEG_PATH = os.path.join(CWD, 'data/data-ds-200Hz/')
-RELATIVE_CLEANED_MEG_PATH = os.path.join(CWD, 'data/data-cleaned/')
-DEFAULT_MEG_CHANNELS = ['MEG2341']  # ['MEG2032', 'MEG2033']
+__leftfrontal__ = [
+    'MEG0121',
+    'MEG0122',
+    'MEG0123',
+    'MEG0311',
+    'MEG0312',
+    'MEG0313',
+    'MEG0321',
+    'MEG0322',
+    'MEG0323',
+    'MEG0331',
+    'MEG0332',
+    'MEG0333',
+    'MEG0341',
+    'MEG0342',
+    'MEG0343',
+    'MEG0511',
+    'MEG0512',
+    'MEG0513',
+    'MEG0521',
+    'MEG0522',
+    'MEG0523',
+    'MEG0531',
+    'MEG0532',
+    'MEG0533',
+    'MEG0541',
+    'MEG0542',
+    'MEG0543',
+    'MEG0611',
+    'MEG0612',
+    'MEG0613',
+    'MEG0621',
+    'MEG0622',
+    'MEG0623',
+    'MEG0641',
+    'MEG0642',
+    'MEG0643',
+    'MEG0821',
+    'MEG0822',
+    'MEG0823'
+]
+
+__righttemporal__ = [
+    'MEG1311',
+    'MEG1312',
+    'MEG1313',
+    'MEG1321',
+    'MEG1322',
+    'MEG1323',
+    'MEG1331',
+    'MEG1332',
+    'MEG1333',
+    'MEG1341',
+    'MEG1342',
+    'MEG1343',
+    'MEG1421',
+    'MEG1422',
+    'MEG1423',
+    'MEG1431',
+    'MEG1432',
+    'MEG1433',
+    'MEG1441',
+    'MEG1442',
+    'MEG1443',
+    'MEG2411',
+    'MEG2412',
+    'MEG2413',
+    'MEG2421',
+    'MEG2422',
+    'MEG2423',
+    'MEG2611',
+    'MEG2612',
+    'MEG2613',
+    'MEG2621',
+    'MEG2622',
+    'MEG2623',
+    'MEG2631',
+    'MEG2632',
+    'MEG2633',
+    'MEG2641',
+    'MEG2642',
+    'MEG2643'
+]
+
+__lefttemporal__ = [
+    'MEG0111',
+    'MEG0112',
+    'MEG0113',
+    'MEG0131',
+    'MEG0132',
+    'MEG0133',
+    'MEG0141',
+    'MEG0142',
+    'MEG0143',
+    'MEG0211',
+    'MEG0212',
+    'MEG0213',
+    'MEG0221',
+    'MEG0222',
+    'MEG0223',
+    'MEG0231',
+    'MEG0232',
+    'MEG0233',
+    'MEG0241',
+    'MEG0242',
+    'MEG0243',
+    'MEG1511',
+    'MEG1512',
+    'MEG1513',
+    'MEG1521',
+    'MEG1522',
+    'MEG1523',
+    'MEG1531',
+    'MEG1532',
+    'MEG1533',
+    'MEG1541',
+    'MEG1542',
+    'MEG1543',
+    'MEG1611',
+    'MEG1612',
+    'MEG1613',
+    'MEG1621',
+    'MEG1622',
+    'MEG1623'
+]
+
+__rightparietal__ = [
+    'MEG0721',
+    'MEG0722',
+    'MEG0723',
+    'MEG0731',
+    'MEG0732',
+    'MEG0733',
+    'MEG1041',
+    'MEG1042',
+    'MEG1043',
+    'MEG1111',
+    'MEG1112',
+    'MEG1113',
+    'MEG1121',
+    'MEG1122',
+    'MEG1123',
+    'MEG1131',
+    'MEG1132',
+    'MEG1133',
+    'MEG1141',
+    'MEG1142',
+    'MEG1143',
+    'MEG2021',
+    'MEG2022',
+    'MEG2023',
+    'MEG2211',
+    'MEG2212',
+    'MEG2213',
+    'MEG2221',
+    'MEG2222',
+    'MEG2223',
+    'MEG2231',
+    'MEG2232',
+    'MEG2233',
+    'MEG2241',
+    'MEG2242',
+    'MEG2243',
+    'MEG2441',
+    'MEG2442',
+    'MEG2443'
+]
+
+__leftparietal__ = [
+    'MEG0411',
+    'MEG0412',
+    'MEG0413',
+    'MEG0421',
+    'MEG0422',
+    'MEG0423',
+    'MEG0431',
+    'MEG0432',
+    'MEG0433',
+    'MEG0441',
+    'MEG0442',
+    'MEG0443',
+    'MEG0631',
+    'MEG0632',
+    'MEG0633',
+    'MEG0711',
+    'MEG0712',
+    'MEG0713',
+    'MEG0741',
+    'MEG0742',
+    'MEG0743',
+    'MEG1811',
+    'MEG1812',
+    'MEG1813',
+    'MEG1821',
+    'MEG1822',
+    'MEG1823',
+    'MEG1831',
+    'MEG1832',
+    'MEG1833',
+    'MEG1841',
+    'MEG1842',
+    'MEG1843',
+    'MEG1631',
+    'MEG1632',
+    'MEG1633',
+    'MEG2011',
+    'MEG2012',
+    'MEG2013'
+]
+
+__root__ = os.getcwd()
+RELATIVE_LABEL_PATH = os.path.join(__root__, 'data/subjects.tsv')
+RELATIVE_MEG_PATH = os.path.join(__root__, 'data/data-ds-200Hz/')
+RELATIVE_CLEANED_MEG_PATH = os.path.join(__root__, 'data/data-cleaned/')
+DEFAULT_MEG_CHANNELS =  ['MEG2121'] #, 'MEG2342', 'MEG2343']
 RECORDING_ID_MAP = {
         0: 'ses-con_task-rest_ec',
         1: 'ses-con_task-rest_eo',
@@ -95,38 +345,14 @@ def get_subject_age(f):
                 return float(line.split('\t')[1])
     raise ValueError
 
-def get_subject_RTrecip(f):
-    id = get_subject_id(f)
-    with open(RELATIVE_LABEL_PATH, 'r') as f:
-        for line in f.readlines():
-            if ('sub-'+id) in line:
-                a, b = line.split('\t')[5:7]
-                return float(a), float(b)
-    raise ValueError
-
-def get_subject_RTdiff(f):
-    id = get_subject_id(f)
-    with open(RELATIVE_LABEL_PATH, 'r') as f:
-        for line in f.readlines():
-            if ('sub-'+id) in line:
-                return float(line.split('\t')[9])
-    raise ValueError
-
-def get_subject_RT(f):
-    id = get_subject_id(f)
-    with open(RELATIVE_LABEL_PATH, 'r') as f:
-        for line in f.readlines():
-            if ('sub-'+id) in line:
-                a, b = line.split('\t')[7:9]
-                return float(a), float(b)
-    raise ValueError
-
 def get_subject_RT(f):
     id = get_subject_id(f)
     with open(RELATIVE_LABEL_PATH, 'r') as f:
         for line in f.readlines():
             if ('sub-'+id) in line:
                 return [float(item) for item in line.split('\t')[5:10]]
+    raise ValueError(
+        f'filepath doesn`t exist, {f}')
 
 def fetch_meg_data(subjects, recordings, cleaned):
     megpath = RELATIVE_CLEANED_MEG_PATH if cleaned else RELATIVE_MEG_PATH

@@ -17,6 +17,8 @@ rtpath = __root__ + '/data/pvt_ind_data.tsv'
 labels = __root__ + '/data/subjects_backup.tsv'
 
 dframe = pd.read_csv(rtpath, sep='\t')
+dframe = dframe.fillna(dframe.mean(axis=0))
+
 RTrecip = dframe['RTrecip']
 
 RT = 1 / RTrecip

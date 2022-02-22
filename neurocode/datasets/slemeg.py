@@ -4,18 +4,11 @@ Provided as part of the SLEMEG project, in collaboration with
 Karolinska Institutet (KI) and Stockholm University (SU).
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 30-11-2021
+Last edited: 22-02-2022
 """
-import mne
-import os
-import time
-
-from collections import defaultdict
-from torch.utils.data import Dataset
-from mne.preprocessing import ICA, create_eog_epochs, create_ecg_epochs
 from braindecode.datasets import BaseConcatDataset, BaseDataset
 from braindecode.datautil.preprocess import preprocess
-from ..utils import DEFAULT_MEG_CHANNELS, fetch_meg_data, load_raw_fif, create_epochs
+from ..utils import DEFAULT_MEG_CHANNELS, fetch_meg_data, load_raw_fif
 
 
 class SLEMEG(BaseConcatDataset):

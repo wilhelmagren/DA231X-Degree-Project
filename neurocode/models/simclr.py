@@ -211,7 +211,7 @@ class ShallowSimCLR(nn.Module):
 class SignalNet(nn.Module):
     def __init__(self, n_channels, sfreq, n_filters=16, projection_size=100,
             input_size_s=5., time_conv_size_s=.1, max_pool_size_s=.05,
-            pad_size_s=.05, dropout=.5, apply_batch_norm=False, return_features=False,
+            pad_size_s=.05, dropout=.25, apply_batch_norm=False, return_features=False,
             **kwargs):
 
         super(SignalNet, self).__init__()
@@ -243,10 +243,9 @@ class SignalNet(nn.Module):
         self._return_features = return_features
 
         self.g = nn.Sequential(
-                nn.Dropout(dropout),
                 nn.Linear(self._encoder_output_size, self._encoder_output_size),
-                nn.ReLU(),
                 nn.Dropout(dropout),
+                nn.ReLU(),
                 nn.Linear(self._encoder_output_size, projection_size)
                 )
 

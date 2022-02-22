@@ -2,12 +2,11 @@
 SimCLR pipeline for use with the SLEMEG dataset.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 14-02-2022
+Last edited: 22-02-2022
 """
-import sys
 import logging
+from sklearn import manifold
 import torch
-import torchvision
 import numpy as np
 
 from torch.utils.data import DataLoader
@@ -15,7 +14,7 @@ from neurocode.datasets import SLEMEG, RecordingDataset
 from neurocode.samplers import ScalogramSampler
 from neurocode.models import ResNet18, SimCLR, ShallowSimCLR, load_model
 from neurocode.training import SimCLR
-from neurocode.datautil import tSNE_plot, history_plot
+from neurocode.datautil import manifold_plot, history_plot
 from braindecode.datautil.windowers import create_fixed_length_windows
 from braindecode.datautil.preprocess import preprocess, Preprocessor, zscore
 from pytorch_metric_learning import losses
@@ -23,7 +22,9 @@ from pytorch_metric_learning import losses
 torch.manual_seed(73)
 np.random.seed(73)
 
-subjects = list(range(31, 33))
+manifold = 'UMAP'
+load_model_ = False
+subjects = list(range(0, 33))
 recordings = [0,1,2,3]
 batch_size = 128
 n_samples = 10
@@ -31,7 +32,7 @@ window_size_s = .5
 shape = (64, 128)
 widths = 50
 n_views = 2
-n_epochs = 50
+n_epochs = 30
 temperature = .1
 sfreq = 200
 window_size_samples = np.ceil(sfreq * window_size_s).astype(int)
@@ -57,7 +58,10 @@ samplers = {'train': ScalogramSampler(train_dataset.get_data(), train_dataset.ge
     batch_size=batch_size)}
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-model = ShallowSimCLR(shape, sfreq, n_filters=32, dropout=.25).to(device)
+if load_model_:
+        model = load_model('params.pth').to(device)
+else:
+        model = ShallowSimCLR(shape, sfreq, n_filters=32, dropout=.25).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(samplers['train']),
         eta_min=0, last_epoch=-1)
@@ -68,7 +72,7 @@ simclr = SimCLR(model, device, optimizer=optimizer, scheduler=scheduler,
         n_views=n_views)
 
 logging.info('Extracting pre-training features...')
-tSNE_plot(samplers['valid'].extract_features(model, device), 'pre')
+manifold_plot(samplers['valid'].extract_features(model, device), 'pre', technique=manifold)
 
 print(f'Training encoder with SimCLR on device={device} for {n_epochs} epochs')
 print(f'   epoch       training loss       validation loss         training acc        validation acc')
@@ -77,5 +81,4 @@ history = simclr.fit(samplers, plot=False, save_model=True, paramspath='params.p
 history_plot(history)
 
 logging.info('Extracting post-training features...')
-tSNE_plot(samplers['valid'].extract_features(model, device), 'post')
-
+manifold_plot(samplers['valid'].extract_features(model, device), 'post', technique=manifold)

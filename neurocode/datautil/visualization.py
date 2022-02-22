@@ -4,15 +4,17 @@ manifold projection of embeddings
 or training history. Work in progress.
 
 Authors: Wilhelm Ågren <wagren@kth.se>
-Last edited: 31-01-2022
+Last edited: 22-02-2022
 """
 import numpy as np
 import matplotlib.pyplot as plt
+import umap
 
 from sklearn.manifold import TSNE
 from ..utils import RECORDING_ID_MAP
 
-def tSNE_plot(X, title, n_components=2, perplexity=30.0, savefig=True):
+
+def manifold_plot(X, title, technique='tSNE', n_components=2, perplexity=30.0, savefig=True):
     """func applies the non-linear dimensionality reduction technique t-SNE
     to the provided embeddings. X is a tuple containing both the list of
     embddings and list of labels, which are of the form:
@@ -57,8 +59,13 @@ def tSNE_plot(X, title, n_components=2, perplexity=30.0, savefig=True):
     documentation for t-SNE, or see the original paper.
     """
     embeddings, Y = X
-    tSNE = TSNE(n_components=n_components, perplexity=perplexity)
-    components = tSNE.fit_transform(embeddings)
+    __manifolds__ = {
+        'tSNE': TSNE(n_components=n_components, perplexity=perplexity),
+        'UMAP': umap.UMAP()
+    }
+
+    reducer = __manifolds__[technique]
+    components = reducer.fit_transform(embeddings)
 
     # set up the clamping of labels, requires the labels to be stored in numpy
     # arrays from now one, since we want to do masking on the transformed 
@@ -70,22 +77,38 @@ def tSNE_plot(X, title, n_components=2, perplexity=30.0, savefig=True):
             'eyes': np.ones((n_samples, )),
             'recording': np.ones((n_samples, )),
             'gender': np.ones((n_samples, )),
-            'age': np.ones((n_samples, ))
+            'age': np.ones((n_samples, )),
+            'RTrecipCTR': np.ones((n_samples, )),
+            'RTrecipPSD': np.ones((n_samples, )),
+            'RTctr': np.ones((n_samples, )),
+            'RTpsd': np.ones((n_samples, )),
+            'RTdiff': np.ones((n_samples, ))
             }
 
-    for idx, (subj_id, reco_id, gender, age) in enumerate(Y):
+    for idx, (subj_id, reco_id, gender, age, RTrecipCTR, RTrecipPSD,
+    RTctr, RTpsd, RTdiff) in enumerate(Y):
         labels['sleep'][idx] = int(reco_id // 2)
         labels['eyes'][idx] = int(reco_id % 2)
         labels['recording'][idx] = int(reco_id)
         labels['gender'][idx] = int(gender)
         labels['age'][idx] = int(age)
+        labels['RTrecipCTR'][idx] = RTrecipCTR
+        labels['RTrecipPSD'][idx] = RTrecipPSD
+        labels['RTctr'][idx] = RTctr
+        labels['RTpsd'][idx] = RTpsd
+        labels['RTdiff'][idx] = RTdiff
 
     unique_labels = {
             'sleep': [0, 1],
             'eyes': [0, 1],
             'recording': [0, 1, 2, 3],
             'gender': [0, 1],
-            'age': np.unique(labels['age'])
+            'age': np.unique(labels['age']),
+            'RTrecipCTR': np.unique(labels['RTrecipCTR']),
+            'RTrecipPSD': np.unique(labels['RTrecipPSD']),
+            'RTctr': np.unique(labels['RTctr']),
+            'RTpsd': np.unique(labels['RTpsd']),
+            'RTdiff': np.unique(labels['RTdiff'])
             }
 
     unique_ll = {
@@ -93,22 +116,41 @@ def tSNE_plot(X, title, n_components=2, perplexity=30.0, savefig=True):
             'eyes': ['closed', 'open'],
             'recording': ['control eyes-closed', 'control eyes-open', 'psd eyes-closed', 'psd eyes-open'],
             'gender': ['female', 'male'],
-            'age': np.unique(labels['age'])
+            'age': unique_labels['age'],
+            'RTrecipCTR': unique_labels['RTrecipCTR'],
+            'RTrecipPSD': unique_labels['RTrecipPSD'],
+            'RTctr': unique_labels['RTctr'],
+            'RTpsd': unique_labels['RTpsd'],
+            'RTdiff': unique_labels['RTdiff']
             }
+    
+    reactiontimes_ = [
+        'RTrecipCTR',
+        'RTrecipPSD',
+        'RTctr',
+        'RTpsd',
+        'RTdiff'
+    ]
 
     for cls in labels:
         fig, ax = plt.subplots()
         colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels[cls]))]
-        for idx, (k, col) in enumerate(zip(unique_labels[cls], colors)):
-            class_mask = labels[cls] == k
-            xy = components[class_mask]
-            ax.scatter(xy[:, 0], xy[:, 1], alpha=.5, color=col, label=unique_ll[cls][idx])
+        if cls in reactiontimes_:
+            colors = labels[cls]
+            sc = ax.scatter(components[:, 0], components[:, 1],
+             c=colors[:], cmap=plt.cm.coolwarm, label=cls)
+            plt.colorbar(sc)
+        else:
+            for idx, (k, col) in enumerate(zip(unique_labels[cls], colors)):
+                class_mask = labels[cls] == k
+                xy = components[class_mask]
+                ax.scatter(xy[:, 0], xy[:, 1], alpha=.5, color=col, label=unique_ll[cls][idx])
         handles, lbls = ax.get_legend_handles_labels()
         uniques = [(h, l) for i, (h, l) in enumerate(zip(handles, lbls)) if l not in lbls[:i]]
         ax.legend(*zip(*uniques))
-        fig.suptitle(f'tSNE of embeddings, subject {cls}, {title} training')
+        fig.suptitle(f'{technique} of embeddings, subject {cls}, {title} training')
         if savefig:
-            plt.savefig(f'tSNE_{cls}_{title}-training.png')
+            plt.savefig(f'{technique}_{cls}_{title}-training.png')
         plt.show()
 
 def history_plot(history, savefig=True):
