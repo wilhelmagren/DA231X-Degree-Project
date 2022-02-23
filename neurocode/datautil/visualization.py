@@ -138,13 +138,13 @@ def manifold_plot(X, title, technique='tSNE', n_components=2, perplexity=30.0, s
         if cls in reactiontimes_:
             colors = labels[cls]
             sc = ax.scatter(components[:, 0], components[:, 1],
-             c=colors[:], cmap=plt.cm.coolwarm, label=cls)
+             c=colors[:], cmap=plt.cm.coolwarm, alpha=.8, s=10.)
             plt.colorbar(sc)
         else:
             for idx, (k, col) in enumerate(zip(unique_labels[cls], colors)):
                 class_mask = labels[cls] == k
                 xy = components[class_mask]
-                ax.scatter(xy[:, 0], xy[:, 1], alpha=.5, color=col, label=unique_ll[cls][idx])
+                ax.scatter(xy[:, 0], xy[:, 1], alpha=.8, color=col, s=10., label=unique_ll[cls][idx])
         handles, lbls = ax.get_legend_handles_labels()
         uniques = [(h, l) for i, (h, l) in enumerate(zip(handles, lbls)) if l not in lbls[:i]]
         ax.legend(*zip(*uniques))

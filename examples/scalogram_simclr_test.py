@@ -12,7 +12,7 @@ import numpy as np
 from torch.utils.data import DataLoader
 from neurocode.datasets import SLEMEG, RecordingDataset
 from neurocode.samplers import ScalogramSampler
-from neurocode.models import ResNet18, SimCLR, ShallowSimCLR, load_model
+from neurocode.models import ResNet18, ProjectionHead, load_model
 from neurocode.training import SimCLR
 from neurocode.datautil import manifold_plot, history_plot
 from braindecode.datautil.windowers import create_fixed_length_windows
@@ -36,6 +36,8 @@ n_epochs = 30
 temperature = .1
 sfreq = 200
 window_size_samples = np.ceil(sfreq * window_size_s).astype(int)
+emb_size = 256
+latent_size = 100
 
 preprocessors = [Preprocessor(lambda x: x*1e12)]
 dataset = SLEMEG(subjects=subjects, recordings=recordings, preload=True,
@@ -58,10 +60,8 @@ samplers = {'train': ScalogramSampler(train_dataset.get_data(), train_dataset.ge
     batch_size=batch_size)}
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-if load_model_:
-        model = load_model('params.pth').to(device)
-else:
-        model = ShallowSimCLR(shape, sfreq, n_filters=32, dropout=.25).to(device)
+encoder =  load_model('params.pth')  # ResNet18(1)
+model = ProjectionHead(encoder, emb_size, latent_size, dropout=.25).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(samplers['train']),
         eta_min=0, last_epoch=-1)
@@ -72,8 +72,9 @@ simclr = SimCLR(model, device, optimizer=optimizer, scheduler=scheduler,
         n_views=n_views)
 
 logging.info('Extracting pre-training features...')
-manifold_plot(samplers['valid'].extract_features(model, device), 'pre', technique=manifold)
+manifold_plot(samplers['valid'].extract_features(encoder, device), 'post', technique=manifold)
 
+exit()
 print(f'Training encoder with SimCLR on device={device} for {n_epochs} epochs')
 print(f'   epoch       training loss       validation loss         training acc        validation acc')
 print(f'------------------------------------------------------------------------------------------------')
@@ -81,4 +82,4 @@ history = simclr.fit(samplers, plot=False, save_model=True, paramspath='params.p
 history_plot(history)
 
 logging.info('Extracting post-training features...')
-manifold_plot(samplers['valid'].extract_features(model, device), 'post', technique=manifold)
+manifold_plot(samplers['valid'].extract_features(encoder, device), 'post', technique=manifold)
