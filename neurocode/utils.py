@@ -351,7 +351,7 @@ def get_subject_RT(f):
     with open(RELATIVE_LABEL_PATH, 'r') as f:
         for line in f.readlines():
             if ('sub-'+id) in line:
-                return [float(item) for item in line.split('\t')[5:10]]
+                return [float(item) for item in line.split('\t')[5:12]]
     raise ValueError(
         f'filepath doesn`t exist, {f}')
 

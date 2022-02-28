@@ -15,7 +15,7 @@ np.random.seed(73)
 
 manifold = 'tSNE'
 load_model_ = False
-subjects = list(range(0, 34))
+subjects = list(range(30, 34))
 recordings = [0,1,2,3]
 n_samples = 20
 window_size_s = 5.
@@ -38,7 +38,7 @@ windows_dataset = create_fixed_length_windows(dataset, start_offset_samples=0,
 
 preprocess(windows_dataset, [Preprocessor(zscore)])
 dataset = RecordingDataset(windows_dataset.datasets, dataset.labels, sfreq=sfreq, channels='MEG')
-train_dataset, valid_dataset = dataset.split_fixed()
+train_dataset, valid_dataset = dataset.split(split=.7)
 
 samplers = {'train': RecordingSampler(train_dataset.get_data(), train_dataset.get_labels(),
     train_dataset.get_info(), n_channels=n_channels, n_views=n_views, n_samples=n_samples, batch_size=train_dataset.info['n_recordings']),

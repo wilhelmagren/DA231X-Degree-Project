@@ -20,6 +20,7 @@ dframe = pd.read_csv(rtpath, sep='\t')
 dframe = dframe.fillna(dframe.mean(axis=0))
 
 RTrecip = dframe['RTrecip']
+minor_lapses = dframe['minor_lapses']
 
 RT = 1 / RTrecip
 RTdiffs = []
@@ -36,13 +37,21 @@ for idx in range(0, RTrecip.shape[0], 2):
     RTrecips.append((control, psd))
     RTs.append((lol, xd))
 
+lapses = []
+for idx in range(0, minor_lapses.shape[0], 2):
+    control = minor_lapses[idx]
+    psd = minor_lapses[idx+1]
+    control = np.floor(control).astype(int)
+    psd = np.floor(psd).astype(int)
+    lapses.append((control, psd))
+
 
 BUFFER = []
 with open(labels, 'r') as f:
     for idx, line in enumerate(f.readlines()):
         if idx == 0:
             s = line.rstrip()
-            s += '\tRTrecipControl\tRTrecipSleep\tRTControl\tRTSleep\tRTdiff'
+            s += '\tRTrecipControl\tRTrecipSleep\tRTControl\tRTSleep\tRTdiff\tminor_lapsesControl\tminor_lapsesSleep'
             BUFFER.append(s)
         else:
             control, psd = RTrecips[idx - 1]
@@ -52,6 +61,8 @@ with open(labels, 'r') as f:
             s += f'\t{control}\t{psd}'
             diff = RTdiffs[idx - 1]
             s += f'\t{diff}'
+            ctr, psdd = lapses[idx - 1]
+            s += f'\t{ctr}\t{psdd}'
             BUFFER.append(s)
 
 with open('test.tsv', 'w') as f:

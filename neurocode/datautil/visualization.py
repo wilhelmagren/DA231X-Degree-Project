@@ -82,11 +82,13 @@ def manifold_plot(X, title, technique='tSNE', n_components=2, perplexity=30.0, s
             'RTrecipPSD': np.ones((n_samples, )),
             'RTctr': np.ones((n_samples, )),
             'RTpsd': np.ones((n_samples, )),
-            'RTdiff': np.ones((n_samples, ))
+            'RTdiff': np.ones((n_samples, )),
+            'lapseCTR': np.ones((n_samples, )),
+            'lapsePSD': np.ones((n_samples, ))
             }
 
     for idx, (subj_id, reco_id, gender, age, RTrecipCTR, RTrecipPSD,
-    RTctr, RTpsd, RTdiff) in enumerate(Y):
+    RTctr, RTpsd, RTdiff, minor_lapses_ctr, minor_lapses_psd) in enumerate(Y):
         labels['sleep'][idx] = int(reco_id // 2)
         labels['eyes'][idx] = int(reco_id % 2)
         labels['recording'][idx] = int(reco_id)
@@ -97,6 +99,8 @@ def manifold_plot(X, title, technique='tSNE', n_components=2, perplexity=30.0, s
         labels['RTctr'][idx] = RTctr
         labels['RTpsd'][idx] = RTpsd
         labels['RTdiff'][idx] = RTdiff
+        labels['lapseCTR'][idx] = minor_lapses_ctr
+        labels['lapsePSD'][idx] = minor_lapses_psd
 
     unique_labels = {
             'sleep': [0, 1],
@@ -108,7 +112,9 @@ def manifold_plot(X, title, technique='tSNE', n_components=2, perplexity=30.0, s
             'RTrecipPSD': np.unique(labels['RTrecipPSD']),
             'RTctr': np.unique(labels['RTctr']),
             'RTpsd': np.unique(labels['RTpsd']),
-            'RTdiff': np.unique(labels['RTdiff'])
+            'RTdiff': np.unique(labels['RTdiff']),
+            'lapseCTR': np.unique(labels['lapseCTR']),
+            'lapsePSD': np.unique(labels['lapsePSD'])
             }
 
     unique_ll = {
@@ -129,7 +135,9 @@ def manifold_plot(X, title, technique='tSNE', n_components=2, perplexity=30.0, s
         'RTrecipPSD',
         'RTctr',
         'RTpsd',
-        'RTdiff'
+        'RTdiff',
+        'lapseCTR',
+        'lapsePSD'
     ]
 
     for cls in labels:
