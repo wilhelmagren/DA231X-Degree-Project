@@ -124,7 +124,7 @@ class SignalSampler(PretextSampler):
 
         return (ANCHORS, SAMPLES)
 
-    def extract_features(self, model, device):
+    def _extract_features(self, model, device):
         """heuristically sample windows from each
         recording and use f() to extract features. 
         Labels are pairwise sampled to the corresponding

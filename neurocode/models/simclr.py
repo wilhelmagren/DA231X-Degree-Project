@@ -258,7 +258,7 @@ class SignalNet(nn.Module):
     
     def forward(self, x):
         if x.ndim == 3:
-            x.unsqueeze(1)
+            x = x.unsqueeze(1)
 
         if self.n_channels > 1:
             x = self.f_spatial(x)

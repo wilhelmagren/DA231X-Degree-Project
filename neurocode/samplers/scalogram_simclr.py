@@ -178,7 +178,7 @@ class ScalogramSampler(PretextSampler):
 
         return (ANCHORS, SAMPLES)
 
-    def extract_features(self, model, device):
+    def _extract_features(self, model, device):
         """sample every 200th window from each recording
         and extract the f() features of the window.
         make sure that the corresponding labels are 'sampled'

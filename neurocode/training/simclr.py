@@ -171,8 +171,7 @@ class SimCLR(object):
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-                tloss += loss.item() / embeddings.shape[0]
-
+                tloss += loss.item()
             with torch.no_grad():
                 self.model.eval()
                 for images in samplers['valid']:
@@ -184,7 +183,7 @@ class SimCLR(object):
                     labels = torch.cat((indices, indices)).to(self.device)
 
                     loss = self.criterion(embeddings, labels)
-                    vloss += loss.item() / embeddings.shape[0]
+                    vloss += loss.item()
 
             self.scheduler.step()
             tloss /= len(samplers['train'])

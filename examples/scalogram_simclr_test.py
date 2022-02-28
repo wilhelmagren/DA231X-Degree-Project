@@ -22,11 +22,11 @@ from pytorch_metric_learning import losses
 torch.manual_seed(73)
 np.random.seed(73)
 
-manifold = 'UMAP'
+manifold = 'tSNE'
 load_model_ = False
-subjects = list(range(0, 33))
+subjects = list(range(0, 34))
 recordings = [0,1,2,3]
-batch_size = 128
+batch_size = 64
 n_samples = 10
 window_size_s = .5
 shape = (64, 128)
@@ -50,7 +50,7 @@ windows_dataset = create_fixed_length_windows(dataset, start_offset_samples=0,
 
 preprocess(windows_dataset, [Preprocessor(zscore)])
 dataset = RecordingDataset(windows_dataset.datasets, dataset.labels, sfreq=sfreq, channels='MEG')
-train_dataset, valid_dataset = dataset.split(split=.7)
+train_dataset, valid_dataset = dataset.split()
 
 samplers = {'train': ScalogramSampler(train_dataset.get_data(), train_dataset.get_labels(),
     train_dataset.get_info(), n_views=n_views, widths=widths, shape=shape, n_samples=n_samples,
@@ -60,7 +60,7 @@ samplers = {'train': ScalogramSampler(train_dataset.get_data(), train_dataset.ge
     batch_size=batch_size)}
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-encoder =  load_model('params.pth')  # ResNet18(1)
+encoder =  ResNet18()  ##load_model('params.pth')  # ResNet18(1)
 model = ProjectionHead(encoder, emb_size, latent_size, dropout=.25).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(samplers['train']),
@@ -71,15 +71,14 @@ simclr = SimCLR(model, device, optimizer=optimizer, scheduler=scheduler,
         criterion=criterion, batch_size=batch_size, epochs=n_epochs, temperature=temperature,
         n_views=n_views)
 
-logging.info('Extracting pre-training features...')
-manifold_plot(samplers['valid'].extract_features(encoder, device), 'post', technique=manifold)
+manifold_plot(samplers['train']._extract_features(encoder, device), 'train-data_pre', technique=manifold)
+manifold_plot(samplers['valid']._extract_features(encoder, device), 'valid-data_pre', technique=manifold)
 
-exit()
 print(f'Training encoder with SimCLR on device={device} for {n_epochs} epochs')
 print(f'   epoch       training loss       validation loss         training acc        validation acc')
 print(f'------------------------------------------------------------------------------------------------')
-history = simclr.fit(samplers, plot=False, save_model=True, paramspath='params.pth')
+history = simclr.fit(samplers, plot=False, save_model=True)
 history_plot(history)
 
-logging.info('Extracting post-training features...')
-manifold_plot(samplers['valid'].extract_features(encoder, device), 'post', technique=manifold)
+manifold_plot(samplers['train']._extract_features(encoder, device), 'train-data_post', technique=manifold)
+manifold_plot(samplers['valid']._extract_features(encoder, device), 'valid-data_post', technique=manifold)

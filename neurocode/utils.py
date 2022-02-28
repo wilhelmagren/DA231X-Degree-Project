@@ -266,7 +266,7 @@ __root__ = os.getcwd()
 RELATIVE_LABEL_PATH = os.path.join(__root__, 'data/subjects.tsv')
 RELATIVE_MEG_PATH = os.path.join(__root__, 'data/data-ds-200Hz/')
 RELATIVE_CLEANED_MEG_PATH = os.path.join(__root__, 'data/data-cleaned/')
-DEFAULT_MEG_CHANNELS =  ['MEG2121'] #, 'MEG2342', 'MEG2343']
+DEFAULT_MEG_CHANNELS =  ['MEG2121', 'MEG2131', 'MEG2141'] #, 'MEG2342', 'MEG2343']
 RECORDING_ID_MAP = {
         0: 'ses-con_task-rest_ec',
         1: 'ses-con_task-rest_eo',

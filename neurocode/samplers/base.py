@@ -36,7 +36,7 @@ class PretextSampler(Sampler):
         if presample:
             self._presample()
  
-    def _extract_embeddings(self, emb, device, n_samples_per_recording=None):
+    def _extract_features(self, emb, device, n_samples_per_recording=None):
         X, Y = [], []
         emb.eval()
         emb.return_feats = True
