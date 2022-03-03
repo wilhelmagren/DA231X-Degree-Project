@@ -43,7 +43,7 @@ class PretextSampler(Sampler):
         with torch.no_grad():
             for reco_idx in range(len(self.data)):
                 for idx, window in enumerate(self.data[reco_idx]):
-                    if idx % 10 == 0:
+                    if idx % 7 == 0:
                         window = torch.Tensor(window[0][None]).to(device)
                         embedding = emb(window)
                         X.append(embedding[0, :][None])
