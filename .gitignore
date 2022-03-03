@@ -11,3 +11,4 @@ notes/
 # Python byte-compiled
 __pycache__/
 
+*.pth
