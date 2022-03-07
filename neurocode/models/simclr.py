@@ -211,7 +211,7 @@ class ShallowSimCLR(nn.Module):
 class SignalNet(nn.Module):
     def __init__(self, n_channels, sfreq, n_filters=16, projection_size=100,
             input_size_s=5., time_conv_size_s=.1, max_pool_size_s=.05,
-            pad_size_s=.05, dropout=.25, apply_batch_norm=False, return_features=False,
+            pad_size_s=.05, dropout=.3, apply_batch_norm=False, return_features=False,
             **kwargs):
 
         super(SignalNet, self).__init__()
@@ -227,12 +227,13 @@ class SignalNet(nn.Module):
         batch_norm = nn.BatchNorm2d if apply_batch_norm else nn.Identity
 
         self.f_temporal = nn.Sequential(
-                nn.Conv2d(1, n_filters, (1, time_conv_size), padding=(0, pad_size)),
+                nn.Conv2d(1, n_filters, (1, time_conv_size), padding=(0, pad_size), bias=False),
                 batch_norm(n_filters),
                 nn.ReLU(),
                 nn.MaxPool2d((1, max_pool_size)),
+                nn.Dropout(dropout),
 
-                nn.Conv2d(n_filters, n_filters*2, (1, time_conv_size), padding=(0, pad_size)),
+                nn.Conv2d(n_filters, n_filters*2, (1, time_conv_size), padding=(0, pad_size), bias=False),
                 batch_norm(n_filters*2),
                 nn.ReLU(),
                 nn.MaxPool2d((1, max_pool_size))
@@ -244,8 +245,8 @@ class SignalNet(nn.Module):
 
         self.g = nn.Sequential(
                 nn.Linear(self._encoder_output_size, self._encoder_output_size),
-                nn.Dropout(dropout),
                 nn.ReLU(),
+                nn.Dropout(dropout),
                 nn.Linear(self._encoder_output_size, projection_size)
                 )
 
@@ -275,9 +276,9 @@ class SignalNet(nn.Module):
 
 if __name__ == '__main__':
     if torch.cuda.is_available():
-        # model = SignalNet(1, 200, n_filters=32, input_size_s=5).to('cuda')
-        model = ShallowSimCLR((64, 128), 200, n_filters=32, dropout=.5).to('cuda')
-        summary(model, (1, 64, 128))
+        model = SignalNet(3, 200, n_filters=16, input_size_s=5, apply_batch_norm=True).to('cuda')
+        #model = ShallowSimCLR((64, 128), 200, n_filters=32, dropout=.5).to('cuda')
+        summary(model, (1, 3, 1000))
     else:
         print('Device `CUDA` is not available, can`t see summary of model...')
 
