@@ -15,13 +15,13 @@ np.random.seed(73)
 
 manifold = 'tSNE'
 load_model_ = False
-subjects = list(range(30, 34))
+subjects = list(range(0, 34))
 recordings = [0,1,2,3]
-n_samples = 20
+n_samples = 50
 window_size_s = 5.
 n_channels = 3
 n_views = 2
-n_epochs = 50
+n_epochs = 200
 temperature = .1
 sfreq = 200
 window_size_samples = np.ceil(sfreq * window_size_s).astype(int)
@@ -38,7 +38,7 @@ windows_dataset = create_fixed_length_windows(dataset, start_offset_samples=0,
 
 preprocess(windows_dataset, [Preprocessor(zscore)])
 dataset = RecordingDataset(windows_dataset.datasets, dataset.labels, sfreq=sfreq, channels='MEG')
-train_dataset, valid_dataset = dataset.split(split=.7)
+train_dataset, valid_dataset = dataset.split_fixed()
 
 samplers = {'train': RecordingSampler(train_dataset.get_data(), train_dataset.get_labels(),
     train_dataset.get_info(), n_channels=n_channels, n_views=n_views, n_samples=n_samples, batch_size=train_dataset.info['n_recordings']),
@@ -46,7 +46,7 @@ samplers = {'train': RecordingSampler(train_dataset.get_data(), train_dataset.ge
     valid_dataset.get_info(), n_channels=n_channels, n_views=n_views, n_samples=n_samples, batch_size=valid_dataset.info['n_recordings'])}
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-model = SignalNet(n_channels, sfreq, input_size_s=window_size_s, n_filters=64, apply_batch_norm=True).to(device)
+model = SignalNet(n_channels, sfreq, input_size_s=window_size_s, n_filters=16, apply_batch_norm=True).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
 scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=len(samplers['train']),
         eta_min=0, last_epoch=-1)
@@ -67,3 +67,8 @@ history_plot(history)
 
 manifold_plot(samplers['train']._extract_features(model, device), 'train-data_post', technique=manifold)
 manifold_plot(samplers['valid']._extract_features(model, device), 'valid-data_post', technique=manifold)
+
+# Implement downstream tasks here!
+#from sklearn.svm import SVC
+
+#clf = SVC(gamma='auto')

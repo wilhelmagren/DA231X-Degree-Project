@@ -236,7 +236,14 @@ class SignalNet(nn.Module):
                 nn.Conv2d(n_filters, n_filters*2, (1, time_conv_size), padding=(0, pad_size), bias=False),
                 batch_norm(n_filters*2),
                 nn.ReLU(),
-                nn.MaxPool2d((1, max_pool_size))
+                nn.MaxPool2d((1, max_pool_size)),
+                nn.Dropout(dropout),
+
+                nn.Conv2d(n_filters*2, n_filters*2, (1, 5), bias=False),
+                batch_norm(n_filters*2),
+                nn.ReLU(),
+                nn.MaxPool2d((1, 2)),
+                nn.Dropout(dropout)
                 )
         
         encoder_output = self._encoder_output_shape(n_channels, input_size)
@@ -244,6 +251,12 @@ class SignalNet(nn.Module):
         self._return_features = return_features
 
         self.g = nn.Sequential(
+                nn.Linear(self._encoder_output_size, self._encoder_output_size),
+                nn.ReLU(),
+                nn.Dropout(dropout),
+                nn.Linear(self._encoder_output_size, self._encoder_output_size),
+                nn.ReLU(),
+                nn.Dropout(dropout),
                 nn.Linear(self._encoder_output_size, self._encoder_output_size),
                 nn.ReLU(),
                 nn.Dropout(dropout),
