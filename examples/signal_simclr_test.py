@@ -21,7 +21,7 @@ torch.manual_seed(73)
 np.random.seed(73)
 
 manifold = 'tSNE'
-load_model_ = True
+load_model_ = False
 subjects = list(range(0, 34))
 recordings = [0,1,2,3]
 batch_size = 128
@@ -29,7 +29,7 @@ n_samples = 50
 window_size_s = 5.
 n_views = 2
 n_channels = 3
-n_epochs = 20
+n_epochs = 100
 temperature = .1
 sfreq = 200
 window_size_samples = np.ceil(sfreq * window_size_s).astype(int)

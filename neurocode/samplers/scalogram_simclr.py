@@ -56,7 +56,6 @@ class ContrastiveViewGenerator(object):
     """
     def __init__(self, T, n_views, shape):
         self.transforms = T
-
         self.n_views = n_views
 
     def __call__(self, x):

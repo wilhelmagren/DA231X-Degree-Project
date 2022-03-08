@@ -112,14 +112,15 @@ class CropResizeTransform(BaseTransform):
 
         """
         n_channels, n_samples = x.shape
+        partitions = np.random.choice([1, 2, 4, 5, 10])
 
-        if n_samples % self.n_partitions:
+        if n_samples % partitions:
             raise ValueError(
-                f'Can`t partition x with {n_samples=} into {self.n_partitions}'
+                f'Can`t partition x with {n_samples=} into {partitions}'
                 ' partitions without information loss.')
         
-        size = n_samples // self.n_partitions
-        indices = np.arange(self.n_partitions)
+        size = n_samples // partitions
+        indices = np.arange(partitions)
         if self.pick_one:
             # pick one partition uniformly at random to resample to original size
             # and return these channels. the alternative is to pick one and leave it
@@ -188,14 +189,15 @@ class PermutationTransform(BaseTransform):
             shuffled to generate 'new' data.
         """
         n_channels, n_samples = x.shape
+        partitions = np.random.choice([2, 4, 5, 10, 20])
 
-        if n_samples % self.n_partitions:
+        if n_samples % partitions:
             raise ValuError(
-                f'Can`t partition x with {n_samples=} into {self.n_partitions}'
+                f'Can`t partition x with {n_samples=} into {partitions}'
                 ' partitions without information loss.')
         
-        size = n_samples // self.n_partitions
-        indices = np.random.permutation(self.n_partitions)
+        size = n_samples // partitions
+        indices = np.random.permutation(partitions)
 
         # get the partitioning indices based on the input size and permuted base indices
         samples = [(np.ceil(i * size).astype(int), np.ceil((i + 1) * size).astype(int)) for i in indices]
@@ -208,3 +210,42 @@ class PermutationTransform(BaseTransform):
                 permuted[channel, nstart:nend] = x[channel, start:end]
         
         return permuted
+
+
+class AmplitudeScaleTransform(BaseTransform):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    def _parameters(self, minscale=0.5, maxscale=2.0):
+        self.minscale = minscale
+        self.maxscale = maxscale
+
+    def transform(self, x):
+        scale = np.random.uniform(self.minscale, self.maxscale, 1)
+        scaled = x.copy() * scale
+        return scaled
+
+
+class ZeroMaskingTransform(BaseTransform):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    def _parameters(self, samples=0.5):
+        self.samples = samples
+    
+    def transform(self, x):
+        n_channels, n_samples = x.shape
+        percent = np.random.uniform(0.1, self.samples, 1)[0]
+        ttt = int(n_samples * ((1 - percent) / 2))
+        offset = np.random.randint(-ttt, high=ttt)
+
+        lidx = np.floor(n_samples * ((1 - percent) / 2)).astype(int) + offset
+        ridx = np.floor(n_samples * (percent + ((1 - percent) / 2))).astype(int) + offset
+
+        zeroed = x.copy()
+        zeroed[:, lidx:ridx] = 0.0
+        zeroed = zeroed.reshape(x.shape)
+
+        return zeroed
+
+

@@ -1,3 +1,3 @@
 from .processing import *
 from .visualization import *
-from .transforms import CropResizeTransform, PermutationTransform
+from .transforms import CropResizeTransform, PermutationTransform, ZeroMaskingTransform, AmplitudeScaleTransform

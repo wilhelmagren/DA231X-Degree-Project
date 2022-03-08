@@ -22,7 +22,7 @@ import torch
 import numpy as np
 
 from .base import PretextSampler
-from ..datautil import CropResizeTransform, PermutationTransform
+from ..datautil import CropResizeTransform, PermutationTransform, AmplitudeScaleTransform, ZeroMaskingTransform
 
 
 class ContrastiveViewGenerator(object):
@@ -83,6 +83,8 @@ class SignalSampler(PretextSampler):
         self._transforms = [
                 CropResizeTransform(n_partitions=crop_partitions),
                 PermutationTransform(n_partitions=permutation_partitions)
+                #ZeroMaskingTransform(samples=.40),
+                #AmplitudeScaleTransform()
                 ]
 
         self.transformer = ContrastiveViewGenerator(
@@ -115,6 +117,16 @@ class SignalSampler(PretextSampler):
 
             x = self.data[reco_idx][wind_idx][0]
             T1, T2 = self.transformer(x)
+
+            """
+            import matplotlib.pyplot as plt
+            fig, axs = plt.subplots(3, 3)
+            for channel in range(3):
+                axs[channel, 0].plot(x[channel, :])
+                axs[channel, 1].plot(T1.numpy()[channel, :])
+                axs[channel, 2].plot(T2.numpy()[channel, :])
+            plt.show()
+            """
 
             batch_anchors.append(T1.unsqueeze(0))
             batch_samples.append(T2.unsqueeze(0))
