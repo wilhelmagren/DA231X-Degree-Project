@@ -7,6 +7,7 @@ pilotstudy/
 data/
 .data/
 notes/
+.ipynb_checkpoints/
 
 # Vim swap and tmp files
 [._]*.s[a-v][a-z]
