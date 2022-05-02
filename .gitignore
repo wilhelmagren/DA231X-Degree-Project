@@ -2,8 +2,10 @@
 realresults/
 finalresults/
 results/
+pilotstudy/
 # .fif MEG data should not go on Git, it's like 24GB...
 data/
+.data/
 notes/
 
 # Vim swap and tmp files
