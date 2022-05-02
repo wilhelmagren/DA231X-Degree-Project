@@ -6,9 +6,9 @@ or training history. Work in progress.
 Authors: Wilhelm Ågren <wagren@kth.se>
 Last edited: 22-02-2022
 """
+from typing_extensions import runtime_checkable
 import numpy as np
 import matplotlib.pyplot as plt
-import umap
 
 from sklearn.manifold import TSNE
 from ..utils import RECORDING_ID_MAP
@@ -58,15 +58,20 @@ def manifold_plot(X, title, technique='tSNE', n_components=2, perplexity=30.0, s
     For more information on manifold learning, see sklearn.manifold 
     documentation for t-SNE, or see the original paper.
     """
+    from IPython.display import set_matplotlib_formats
+    #set_matplotlib_formats('svg')
+    #plt.style.use('seaborn')
+    #plt.rcParams['figure.dpi'] = 300
+    #plt.rcParams['savefig.dpi'] = 300
     embeddings, Y = X
     __manifolds__ = {
-        'tSNE': TSNE(n_components=n_components, perplexity=perplexity),
-        'UMAP': umap.UMAP()
+        'tSNE': TSNE(n_components=n_components, perplexity=perplexity)
     }
 
     reducer = __manifolds__[technique]
     components = reducer.fit_transform(embeddings)
-
+    #plt.rc('font', size=18)
+    #plt.rc('axes', titlesize=18)
     # set up the clamping of labels, requires the labels to be stored in numpy
     # arrays from now one, since we want to do masking on the transformed 
     # embedding components. this ultimately makes it so we only have to iterate
@@ -140,26 +145,34 @@ def manifold_plot(X, title, technique='tSNE', n_components=2, perplexity=30.0, s
         'lapsePSD'
     ]
 
+    realtitle = 'training-data pre'
+    if title == 'valid-data_pre':
+        realtitle = 'validation-data pre'
+    elif title == 'valid-data_post':
+        realtitle = 'validation-data post'
+    elif title == 'train-data_post':
+        realtitle = 'training-data post'
+
     for cls in labels:
         fig, ax = plt.subplots()
         colors = [plt.cm.Spectral(each) for each in np.linspace(0, 1, len(unique_labels[cls]))]
         if cls in reactiontimes_:
             colors = labels[cls]
             sc = ax.scatter(components[:, 0], components[:, 1],
-             c=colors[:], cmap=plt.cm.coolwarm, alpha=.8, s=10.)
+             c=colors[:], cmap=plt.cm.coolwarm, alpha=.8, s=5.)
             plt.colorbar(sc)
         else:
             for idx, (k, col) in enumerate(zip(unique_labels[cls], colors)):
                 class_mask = labels[cls] == k
                 xy = components[class_mask]
-                ax.scatter(xy[:, 0], xy[:, 1], alpha=.8, color=col, s=10., label=unique_ll[cls][idx])
+                ax.scatter(xy[:, 0], xy[:, 1], alpha=.8, s=5., label=unique_ll[cls][idx])
         handles, lbls = ax.get_legend_handles_labels()
         uniques = [(h, l) for i, (h, l) in enumerate(zip(handles, lbls)) if l not in lbls[:i]]
         ax.legend(*zip(*uniques))
-        fig.suptitle(f'{technique} of embeddings, subject {cls}, {title} training')
+        fig.suptitle(f't-SNE of features, subject {cls}, {realtitle} training')
         if savefig:
-            plt.savefig(f'{technique}_{cls}_{title}-training.png')
-        plt.show()
+            plt.savefig(f't-SNE_{cls}_{title}-training.png')
+        #plt.show()
 
 def history_plot(history, savefig=True):
     """func takes lists of training metrics and visualizes them in a combined plot.
@@ -209,7 +222,6 @@ def history_plot(history, savefig=True):
         ax1.legend(lines1, labels1)
 
     plt.tight_layout()
-    plt.show()
     
     if savefig:
         plt.savefig(f'training_history.png')

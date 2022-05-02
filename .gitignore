@@ -1,3 +1,8 @@
+# My results et al.
+realresults/
+finalresults/
+results/
+# .fif MEG data should not go on Git, it's like 24GB...
 data/
 notes/
 
@@ -11,4 +16,6 @@ notes/
 # Python byte-compiled
 __pycache__/
 
+# PyTorch neural net params
 *.pth
+

@@ -108,15 +108,18 @@ class ScalogramSampler(PretextSampler):
         self.widths = np.arange(1, widths + 1)
         self.signal = sig.ricker
         self.n_views = n_views
+        shape = shape[1:]
         self.shape = shape
 
         self._transforms = [
             transforms.Compose([
-                transforms.RandomResizedCrop(size=shape, scale=(.5, .8)),
+                transforms.RandomResizedCrop(shape, scale=(0.3, 0.9)),
+                transforms.ColorJitter(0.5, 0.5, 0.5, 0.2),
                 transforms.ToTensor()]),
             transforms.Compose([
                 transforms.RandomPosterize(bits=3, p=.9999),
                 transforms.Resize(size=shape),
+                transforms.ColorJitter(0.5, 0.5, 0.5, 0.2),
                 transforms.ToTensor()])]
                 
 
@@ -153,19 +156,31 @@ class ScalogramSampler(PretextSampler):
 
             x = self.data[reco_idx][wind_idx][0]
             scalogram = sig.cwt(x.squeeze(0), self.signal, self.widths)
-            scalogram = scalogram[:(self.widths[-1] // 2), :]
             scalogram = ((scalogram - scalogram.min()) * (1/(scalogram.max() - scalogram.min()) * 255)).astype('uint8')
             image = Image.fromarray(scalogram)
             T1, T2 = self.transformer(image)
-
+            # normalize images
+            T1 = (T1 - T1.mean()) / T1.std()
+            T2 = (T2 - T2.mean()) / T2.std()
             """
+            plt.style.use('seaborn')
+            plt.rcParams['figure.dpi'] = 300
+            plt.rcParams['savefig.dpi'] = 300
             fig, axs = plt.subplots(1, 4)
+            #axs.get_xaxis().set_visible(False)
+            #axs.get_yaxis().set_visible(False)
+            axs[1].get_xaxis().set_visible(False)
+            axs[1].get_yaxis().set_visible(False)
+            axs[2].get_xaxis().set_visible(False)
+            axs[2].get_yaxis().set_visible(False)
+            axs[3].get_xaxis().set_visible(False)
+            axs[3].get_yaxis().set_visible(False)
             axs[0].plot(x.squeeze(0))
-            axs[1].imshow(scalogram, extent=[-1, 1, 1, self.widths[-1]], aspect='auto')
+            axs[1].imshow(scalogram, extent=[-1, 1, 1, self.widths[-1]], aspect='auto', cmap='viridis')
             arr1 = torch.swapaxes(torch.swapaxes(T1, 0, 2), 0, 1).numpy().squeeze(2)
-            axs[2].imshow(arr1, extent=[-1, 1, 1, self.widths[-1]], aspect='auto')
+            axs[2].imshow(arr1, extent=[-1, 1, 1, self.widths[-1]], aspect='auto', cmap='viridis')
             arr2 = torch.swapaxes(torch.swapaxes(T2, 0, 2), 0, 1).numpy().squeeze(2)
-            axs[3].imshow(arr2, extent=[-1, 1, 1, self.widths[-1]], aspect='auto')
+            axs[3].imshow(arr2, extent=[-1, 1, 1, self.widths[-1]], aspect='auto', cmap='viridis')
             plt.show()
             """
 
@@ -221,7 +236,7 @@ class ScalogramSampler(PretextSampler):
         with torch.no_grad():
             for recording in range(len(self.data)):
                 for window in range(len(self.data[recording])):
-                    if window % 50 == 0:
+                    if window % 20 == 0:
                         window = self.data[recording][window][0]
                         matrix = sig.cwt(window.squeeze(0), self.signal, self.widths)
                         matrix = resize_transform(matrix).to(device)
@@ -230,6 +245,7 @@ class ScalogramSampler(PretextSampler):
                         Y.append(self.labels[recording])
         X = np.concatenate([x.cpu().detach().numpy() for x in X], axis=0)
         model._return_features = False
+        model.train()
 
         return (X, Y)
 

@@ -17,8 +17,8 @@ import matplotlib.pyplot as plt
 from neurocode.utils import BCEWithLogitsAccuracy
 from neurocode.datasets import RecordingDataset, SLEMEG
 from neurocode.samplers import RRPSampler
-from neurocode.models import ContrastiveRPNet, StagerNet
-from neurocode.datautil import tSNE_plot, history_plot
+from neurocode.models import ContrastiveRPNet, SignalNet
+from neurocode.datautil import manifold_plot, history_plot
 from braindecode.datautil.preprocess import preprocess, Preprocessor, zscore
 from braindecode.datautil.windowers import create_fixed_length_windows
 
@@ -29,13 +29,13 @@ n_jobs=1
 window_size_s = 5
 sfreq = 200
 window_size_samples = window_size_s * sfreq
-subjects = list(range(0, 33))
+subjects = list(range(0, 34))
 recordings = [0,1,2,3]
 tau_pos = 3
 tau_neg = 30
 gamma = .5
-n_samples = 50
-batch_size = 64
+n_samples = 20
+batch_size = 128
 n_channels = 3
 emb_size = 100
 
@@ -55,7 +55,7 @@ preprocess(windows_dataset, [Preprocessor(zscore)])
 
 # reformat from BaseConcatDataset to RecordingDataset and perform 70/30 split into train/valid
 recording_dataset = RecordingDataset(windows_dataset.datasets, dataset.labels, sfreq=sfreq, channels='MEG')
-train_dataset, valid_dataset = recording_dataset.split(split=.7)
+train_dataset, valid_dataset = recording_dataset.split_fixed()
 
 # set up recording-relative-positioning sampler with MEG recording dataset
 samplers = {'train': RRPSampler(train_dataset.get_data(), train_dataset.get_labels(),
@@ -68,15 +68,16 @@ samplers = {'train': RRPSampler(train_dataset.get_data(), train_dataset.get_labe
 
 # Setup pytorch training, move models etc.
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-emb = StagerNet(n_channels, sfreq, n_conv_chs=32, dropout=.5, input_size_s=5.).to(device)
+emb = SignalNet(n_channels, sfreq, input_size_s=window_size_s, 
+                  n_filters=40, apply_batch_norm=True, dropout=0.3).to(device)
 model = ContrastiveRPNet(emb, emb_size, dropout=.5).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-4)
 criterion = torch.nn.BCEWithLogitsLoss()
 
 
 print(f'extracting embeddings before training...')
-embeddings = {'pre': samplers['valid']._extract_embeddings(emb, device)}
-tSNE_plot(embeddings['pre'], 'before')
+manifold_plot(samplers['train']._extract_features(emb, device), 'train-data_pre', technique='tSNE')
+manifold_plot(samplers['valid']._extract_features(emb, device), 'valid-data_pre', technique='tSNE')
 
 epochs = 20
 history = {'tloss': [], 'vloss': [], 'tacc': [], 'vacc': []}
@@ -117,7 +118,7 @@ for epoch in range(epochs):
     print(f'    {epoch+1:02d}         {tloss:.5f}         {vloss:.5f}          {100*tacc:.2f}%          {100*vacc:.2f}%')
 
 print(f'extracting embeddings after training...')
-embeddings['post'] = samplers['valid']._extract_embeddings(emb, device)
-tSNE_plot(embeddings['post'], 'after')
+manifold_plot(samplers['train']._extract_features(emb, device), 'train-data_post', technique='tSNE')
+manifold_plot(samplers['valid']._extract_features(emb, device), 'valid-data_post', technique='tSNE')
 
 history_plot(history)

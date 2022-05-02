@@ -262,11 +262,17 @@ __leftparietal__ = [
     'MEG2013'
 ]
 
+# NEGATIVE CONTROL
+# MEG1511 MEG0721 MEG2611
+
+# NORMAL CHANNELS
+# MEG2141 MEG2121 MEG2131
+
 __root__ = os.getcwd()
 RELATIVE_LABEL_PATH = os.path.join(__root__, 'data/subjects.tsv')
 RELATIVE_MEG_PATH = os.path.join(__root__, 'data/data-ds-200Hz/')
 RELATIVE_CLEANED_MEG_PATH = os.path.join(__root__, 'data/data-cleaned/')
-DEFAULT_MEG_CHANNELS =  ['MEG2121', 'MEG2131', 'MEG2141'] #, 'MEG2342', 'MEG2343']
+DEFAULT_MEG_CHANNELS = ['MEG2121', 'MEG2131', 'MEG2141'] # ['MEG1431', 'MEG2611', 'MEG2621'] #['MEG2121', 'MEG2131', 'MEG2141'] # ['MEG0711', 'MEG0721', 'MEG0731'] # ['MEG2121', 'MEG2131', 'MEG2141'] #, 'MEG2342', 'MEG2343']
 RECORDING_ID_MAP = {
         0: 'ses-con_task-rest_ec',
         1: 'ses-con_task-rest_eo',

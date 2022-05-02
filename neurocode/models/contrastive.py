@@ -34,9 +34,6 @@ class ContrastiveRPNet(nn.Module):
         super(ContrastiveRPNet, self).__init__()
         self.emb = emb
         self.clf = nn.Sequential(
-                nn.Linear(emb_size, emb_size),
-                nn.Dropout(dropout),
-                nn.ReLU(),
                 nn.Linear(emb_size, 1)
                 )
 

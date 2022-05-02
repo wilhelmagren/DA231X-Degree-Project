@@ -172,6 +172,7 @@ class SimCLR(object):
                 loss.backward()
                 self.optimizer.step()
                 tloss += loss.item()
+
             with torch.no_grad():
                 self.model.eval()
                 for images in samplers['valid']:

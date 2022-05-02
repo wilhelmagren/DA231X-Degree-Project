@@ -210,8 +210,8 @@ class ShallowSimCLR(nn.Module):
 
 class SignalNet(nn.Module):
     def __init__(self, n_channels, sfreq, n_filters=16, projection_size=100,
-            input_size_s=5., time_conv_size_s=.1, max_pool_size_s=.05,
-            pad_size_s=.05, dropout=.3, apply_batch_norm=False, return_features=False,
+            input_size_s=5., time_conv_size_s=.5, max_pool_size_s=.125,
+            pad_size_s=.25, dropout=.3, apply_batch_norm=False, return_features=False,
             **kwargs):
 
         super(SignalNet, self).__init__()
@@ -227,23 +227,15 @@ class SignalNet(nn.Module):
         batch_norm = nn.BatchNorm2d if apply_batch_norm else nn.Identity
 
         self.f_temporal = nn.Sequential(
-                nn.Conv2d(1, n_filters, (1, time_conv_size), padding=(0, pad_size), bias=False),
+                nn.Conv2d(1, n_filters, (1, time_conv_size), padding=(0, pad_size)),
                 batch_norm(n_filters),
                 nn.ReLU(),
                 nn.MaxPool2d((1, max_pool_size)),
-                nn.Dropout(dropout),
 
-                nn.Conv2d(n_filters, n_filters*2, (1, time_conv_size), padding=(0, pad_size), bias=False),
+                nn.Conv2d(n_filters, n_filters*2, (1, time_conv_size), padding=(0, pad_size)),
                 batch_norm(n_filters*2),
                 nn.ReLU(),
                 nn.MaxPool2d((1, max_pool_size)),
-                nn.Dropout(dropout),
-
-                nn.Conv2d(n_filters*2, n_filters*2, (1, 5), bias=False),
-                batch_norm(n_filters*2),
-                nn.ReLU(),
-                nn.MaxPool2d((1, 2)),
-                nn.Dropout(dropout)
                 )
         
         encoder_output = self._encoder_output_shape(n_channels, input_size)
@@ -251,12 +243,6 @@ class SignalNet(nn.Module):
         self._return_features = return_features
 
         self.g = nn.Sequential(
-                nn.Linear(self._encoder_output_size, self._encoder_output_size),
-                nn.ReLU(),
-                nn.Dropout(dropout),
-                nn.Linear(self._encoder_output_size, self._encoder_output_size),
-                nn.ReLU(),
-                nn.Dropout(dropout),
                 nn.Linear(self._encoder_output_size, self._encoder_output_size),
                 nn.ReLU(),
                 nn.Dropout(dropout),
@@ -287,11 +273,82 @@ class SignalNet(nn.Module):
 
 
 
+class VGG(nn.Module):
+    def __init__(self, input_shape, emb_size, n_conv_chs=16, dropout=0.3):
+        super(VGG, self).__init__()
+        channels, height, width = input_shape
+        self._return_features = False
+
+        self.f = nn.Sequential(
+            nn.Conv2d(channels, n_conv_chs, (3, 3), padding=1),
+            nn.BatchNorm2d(n_conv_chs),
+            nn.ReLU(),
+            nn.Conv2d(n_conv_chs, n_conv_chs*2, (3, 3), padding=1),
+            nn.BatchNorm2d(n_conv_chs*2),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2)),
+
+            nn.Conv2d(n_conv_chs*2, n_conv_chs*2, (3, 3), padding=1),
+            nn.BatchNorm2d(n_conv_chs*2),
+            nn.ReLU(),
+            nn.Conv2d(n_conv_chs*2, n_conv_chs*4, (3, 3), padding=1),
+            nn.BatchNorm2d(n_conv_chs*4),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2)),
+
+            nn.Conv2d(n_conv_chs*4, n_conv_chs*4, (3, 3), padding=1),
+            nn.BatchNorm2d(n_conv_chs*4),
+            nn.ReLU(),
+            nn.Conv2d(n_conv_chs*4, n_conv_chs*4, (3, 3), padding=1),
+            nn.BatchNorm2d(n_conv_chs*4),
+            nn.ReLU(),
+            nn.MaxPool2d((2, 2)),
+
+            nn.Conv2d(n_conv_chs*4, n_conv_chs*4, (3, 3), padding=1),
+            nn.BatchNorm2d(n_conv_chs*4),
+            nn.ReLU(),
+            nn.Conv2d(n_conv_chs*4, n_conv_chs*4, (3, 3), padding=1),
+            nn.BatchNorm2d(n_conv_chs*4),
+            nn.ReLU(),
+            nn.MaxPool2d((4, 4))
+        )
+
+        f_output_size = self._len_encoder_output(channels, height, width)
+
+        self.g = nn.Sequential(
+            nn.Linear(f_output_size, f_output_size),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(f_output_size, f_output_size),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(f_output_size, emb_size)
+        )
+    
+    def _len_encoder_output(self, c, h, w):
+        self.f.eval()
+        with torch.no_grad():
+            out = self.f(torch.Tensor(1, c, h, w))
+        self.f.train()
+        return len(out.flatten())
+    
+    def forward(self, x):
+        x = self.f(x).flatten(start_dim=1)
+
+        if self._return_features:
+            return x
+        
+        return self.g(x)
+
+
+
+
 if __name__ == '__main__':
     if torch.cuda.is_available():
-        model = SignalNet(3, 200, n_filters=16, input_size_s=5, apply_batch_norm=True).to('cuda')
+        #model = SignalNet(3, 200, n_filters=50, input_size_s=5.0, apply_batch_norm=True).to('cuda')
         #model = ShallowSimCLR((64, 128), 200, n_filters=32, dropout=.5).to('cuda')
-        summary(model, (1, 3, 1000))
+        model = VGG((1, 64, 64), 100, n_conv_chs=16).to('cuda')
+        summary(model, (1, 64, 64))
     else:
         print('Device `CUDA` is not available, can`t see summary of model...')
 

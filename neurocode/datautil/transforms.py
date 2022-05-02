@@ -112,7 +112,7 @@ class CropResizeTransform(BaseTransform):
 
         """
         n_channels, n_samples = x.shape
-        partitions = np.random.choice([1, 2, 4, 5, 10])
+        partitions = np.random.choice([1, 2, 4, 5])
 
         if n_samples % partitions:
             raise ValueError(
@@ -189,10 +189,10 @@ class PermutationTransform(BaseTransform):
             shuffled to generate 'new' data.
         """
         n_channels, n_samples = x.shape
-        partitions = np.random.choice([2, 4, 5, 10, 20])
+        partitions = np.random.choice([4, 5, 10, 20])
 
         if n_samples % partitions:
-            raise ValuError(
+            raise ValueError(
                 f'Can`t partition x with {n_samples=} into {partitions}'
                 ' partitions without information loss.')
         

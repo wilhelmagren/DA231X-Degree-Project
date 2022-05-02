@@ -16,11 +16,12 @@ class RecordingSampler(PretextSampler):
         batch_anchors = []
         batch_samples = []
         recordings = self.rng.choice(self.info['n_recordings'], size=(self.batch_size), replace=False)
-        for recording in recordings:
-            win1_idx = self._sample_window(recording_idx=recording)
-            win2_idx = self._sample_window(recording_idx=recording)
-            batch_anchors.append(self.data[recording][win1_idx][0][None])
-            batch_samples.append(self.data[recording][win2_idx][0][None])
+        for reco_idx1 in recordings:
+            win_idx1 = self._sample_window(recording_idx=reco_idx1)
+            win_idx2 = self._sample_window(recording_idx=reco_idx1)
+
+            batch_anchors.append(self.data[reco_idx1][win_idx1][0][None])
+            batch_samples.append(self.data[reco_idx1][win_idx2][0][None])
         
         ANCHORS = torch.Tensor(np.concatenate(batch_anchors, axis=0))
         SAMPLES = torch.Tensor(np.concatenate(batch_samples, axis=0))

@@ -9,6 +9,8 @@ import torch
 import numpy as np
 
 from torch.utils.data.sampler import Sampler
+from collections import defaultdict
+from ..datasets import RecordingDataset
 
 
 class PretextSampler(Sampler):
@@ -39,18 +41,22 @@ class PretextSampler(Sampler):
     def _extract_features(self, emb, device, n_samples_per_recording=None):
         X, Y = [], []
         emb.eval()
-        emb.return_feats = True
+        emb._return_features = True
         with torch.no_grad():
             for reco_idx in range(len(self.data)):
                 for idx, window in enumerate(self.data[reco_idx]):
-                    if idx % 7 == 0:
-                        window = torch.Tensor(window[0][None]).to(device)
-                        embedding = emb(window)
-                        X.append(embedding[0, :][None])
-                        Y.append(self.labels[reco_idx])
+                    window = torch.Tensor(window[0][None]).to(device)
+                    embedding = emb(window)
+                    X.append(embedding[0, :][None])
+                    Y.append(self.labels[reco_idx])
         X = np.concatenate([x.cpu().detach().numpy() for x in X], axis=0)
-        emb.return_feats = False
+        emb._return_features = False
         return (X, Y)
+    
+    def downstream_sample(self, emb, device):
+        X, y = [], []
+        emb.eval()
+        emb.return_feats = True
         
 
     def _parameters(self, *args, **kwargs):
@@ -72,3 +78,21 @@ class PretextSampler(Sampler):
         raise NotImplementedError(
                 'Please implement window-pair sampling!')
   
+    def _split(self):
+        X_train = defaultdict(list)
+        Y_train = defaultdict(list)
+        X_valid = defaultdict(list)
+        Y_valid = defaultdict(list)
+        for recording in range(self.info['n_recordings']):
+            r_len = len(self.data[recording])
+            split = np.ceil(r_len * 0.7).astype(int)
+            for window in range(split):
+                X_train[recording].append(self.data[recording][window])
+            Y_train[recording].append(self.labels[recording])
+            for window in range(split, r_len):
+                X_valid[recording].append(self.data[recording][window])
+            Y_valid[recording].append(self.labels[recording])
+        
+        train_dataset = RecordingDataset(X_train, Y_train, formatted=True, sfreq=self.info['sfreq'])
+        valid_dataset = RecordingDataset(X_valid, Y_valid, formatted=True, sfreq=self.info['sfreq'])
+        return (train_dataset, valid_dataset)

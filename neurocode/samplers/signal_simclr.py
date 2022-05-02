@@ -83,7 +83,7 @@ class SignalSampler(PretextSampler):
         self._transforms = [
                 CropResizeTransform(n_partitions=crop_partitions),
                 PermutationTransform(n_partitions=permutation_partitions)
-                #ZeroMaskingTransform(samples=.40),
+                #ZeroMaskingTransform(samples=.30),
                 #AmplitudeScaleTransform()
                 ]
 
@@ -120,11 +120,15 @@ class SignalSampler(PretextSampler):
 
             """
             import matplotlib.pyplot as plt
-            fig, axs = plt.subplots(3, 3)
-            for channel in range(3):
-                axs[channel, 0].plot(x[channel, :])
-                axs[channel, 1].plot(T1.numpy()[channel, :])
-                axs[channel, 2].plot(T2.numpy()[channel, :])
+            plt.style.use('seaborn')
+            plt.rcParams['figure.dpi'] = 300
+            plt.rcParams['savefig.dpi'] = 300
+            fig, axs = plt.subplots()
+
+            #for channel in range(3):
+            #axs[channel, 0].plot(x[channel, :])
+            #axs[channel, 1].plot(T1.numpy()[channel, :])
+            axs.plot(x[0, :])
             plt.show()
             """
 
@@ -178,11 +182,11 @@ class SignalSampler(PretextSampler):
         with torch.no_grad():
             for recording in range(len(self.data)):
                 for window in range(len(self.data[recording])):
-                    if window % 10 == 0:
+                    if window % 1 == 0:
                         window = torch.Tensor(self.data[recording][window][0][None]).float().to(device)
                         feature = model(window.unsqueeze(0))
                         X.append(feature[0, :][None])
-                        Y.append(self.labels[recording])
+                        Y.append(*self.labels[recording])
         X = np.concatenate([x.cpu().detach().numpy() for x in X], axis=0)
         model._return_features = False
 
