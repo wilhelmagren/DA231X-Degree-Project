@@ -1,4 +1,20 @@
 # DA231X-Degree-Project
+
+## Project description
+In collaboration with Karolinska Institutet and Stockholm University the [SLEMEG dataset](https://www.su.se/english/research/research-projects/slemeg-an-meg-study-on-the-effects-of-insufficient-sleep-on-emotional-and-attentional-processes) has been used to investigate contrastive self-supervised learning paradigms for automatic learning and extraction of features on MEG data. In particular, the SimCLR framework proposed by Hinton et al. 2020 has been utilized and studied to propose 3 models that aim to learn informative representations on the MEG that to be used in classification and regression downstream tasks. The dataset includes resting state recordings from 33 subjects where they once were present with normal sleep schedules and once when permitted only 4 hours of sleep per night, being prone to partial sleep deprivation (psd). Thus, the overall goal and aim is for the models to encode a representation that distinguishes between control and psd samples, that also manages to generalize sufficiently well.
+
+### Research question and objectives
+"*How does the choice of self-supervised learning approach impact the learned latent space representation considering its informative properties relating to subject labels of the MEG data?*"
+
+1. Visually inspect the extracted features by means of the non-linear dimensionality reduction technique t-SNE and investigate if there exists distinct clusters according to subject labels.
+2. Apply k-Means to the extracted features to determine the cluster robustness with a k-fold cross validation scheme and evaluate the clusters with silhouette coefficient metric.
+3. Utilize the learned latent space representation to perform classification and regression on the corresponding subject labels to determine the SSL methods transfer learning capabilities in a downstream task context.
+
+## Neurocode
+![Neurocode logo](/images/neurocode.png)
+This is a small library I wrote to streamline working with the provided SLEMEG dataset (but works for other EEG/MEG datasets as well). It features loading data, preprocessing and removing artifacts, pretext tasks, downstream tasks, and training and evaluation of models! Inspiration was taken from the library [braindecode](https://braindecode.org/) for this project, but directly using that library did not work with the SLEMEG dataset. Hence, much of the code is inspired by that of braindecode but tailored for the provided SLEMEG project. It is dependent on the following libraries: <br> > [numpy](https://numpy.org/), [mne-python](https://mne.tools/stable/index.html), [sci-kit learn](https://scikit-learn.org/stable/), [pytorch](https://pytorch.org/).
+
+## Administrative
 Degree Project in Computer Science and Engineering at KTH Royal Institute of Technology, advanced level 30 credits. Yields a M.Sc.Eng degree as part of the Information- and Communication Technology program CINTE. The contents and learning outcomes of the course are as follows:
 
 *"Before the degree project course is started, the student should identify an appropriate degree project assignment and formulate a project proposal, so that this can be approved by the examiner. The assignment should be chosen so that it implies a natural progression of the knowledge and skills that have been acquired within the education and in a possible specialization within the education."*
@@ -21,14 +37,6 @@ Active attendance at two oral presentations of degree projects for second-cycle 
 Links to course rooms are found below:
 - [DA231X Degree Project in Computer Science and Engineering, Second Cycle 30.0 credits](https://www.kth.se/student/kurser/kurs/DA231X?l=en)
 - [Degree Projects at EECS, 2022](https://canvas.kth.se/courses/33514)
-
-## Project description and thesis
-In collaboration with the SLEMEG project conducted with Karolinska Universitetet (KI) and Stockholm University (SU). MEG data collected from 33 subjects to measure and investigate potential effects of sleep deprivation on brain activity. This is the thesis that I have written with much rigour and passion.
-
-
-## Neurocode
-![Neurocode logo](/images/neurocode.png)
-This is a small library I wrote to streamline working with the provided MEG dataset. It features loading data, preprocessing and removing artifacts, pretext tasks, downstream tasks, and training and evaluation of models! The idea was to utilize the library [braindecode](https://braindecode.org/) for this project, but the samplers for the pretext task does not work with our dataset because of missing events. So I had to take an alternative approach and do it myself. Hence, much of the code is inspired by that of braindecode but tailored for the provided SLEMEG project. It is mostly built upon the libraries: [numpy](https://numpy.org/), [mne-python](https://mne.tools/stable/index.html) and [pytorch](https://pytorch.org/).
 
 ### Contact and license
 Author: Wilhelm Ågren, wagren@kth.se
